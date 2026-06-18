@@ -328,14 +328,7 @@ Just ask me anything about NBKR Institute!"""
             table_html = format_timetable_table(section)
             if table_html:
                 return table_html
-    
-    # Try to find best match from knowledge base
-    best_match, score = find_best_match(user_message, knowledge_base)
-    
-    if best_match and score > 0.3:
-        return best_match
-    
-    # If no good match found, provide helpful fallback
+
     keywords = extract_keywords(user_message)
     if keywords:
         return f"I understand you're asking about {', '.join(keywords[:3])}. Could you please rephrase your question? You can ask me about faculty members, courses, admissions, attendance system, e-journals, assessments, or timetables (e.g., 'Show me Section A timetable')."

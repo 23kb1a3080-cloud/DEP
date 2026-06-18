@@ -34,7 +34,7 @@ timetable = {
         },
         "Saturday": {
             "9-10": "EP (BRK)",
-            "10-11": "BEEE (SDS)",w
+            "10-11": "BEEE (SDS)",
             "11-12": "LAC (VHKR)",
             "1-2": "NGCS (GM)",
             "2-4": "IT WS (SSB, USJ, CVVR)"

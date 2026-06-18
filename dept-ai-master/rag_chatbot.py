@@ -1016,17 +1016,96 @@ def build_faculty_list_table(faculty_list=None):
 
 
 def build_faculty_timetable_html(timetable) -> str:
-    """Render faculty weekly timetable — supports new day-keyed dict format."""
+    """Render faculty weekly timetable.
+    Supports:
+      - Slot format: {"Mon": {"9:00-10:00": "SUBJECT (CLASS)", ...}, ...}
+      - List format: {"Monday": [{time, subject, class, type}, ...], ...}
+      - Old flat list: [{day, time, subject, class}, ...]
+    """
     if not timetable:
         return ""
 
-    # New format: {"Monday": [{time, subject, class, type}, ...], ...}
-    if isinstance(timetable, dict):
-        day_order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+    LUNCH_VALS = {"L","U","N","C","H","BREAK","LUNCH",""}
+    SLOTS = ["9:00-10:00","10:00-11:00","11:00-12:00","12:00-1:00",
+             "1:00-2:00","2:00-3:00","3:00-4:00","4:00-5:00"]
+    DAY_ORDER = ["Mon","Tue","Wed","Thu","Fri","Sat"]
+
+    # ── Detect slot format: {"Mon": {"9:00-10:00": "...", ...}, ...} ──────────
+    first_val = next(iter(timetable.values()), None)
+    is_slot_format = isinstance(first_val, dict)
+
+    if isinstance(timetable, dict) and is_slot_format:
+        # Build a grid table: rows = days, cols = time slots
+        # Detect which days/slots have content
+        active_days = [d for d in DAY_ORDER if d in timetable and
+                       any(v for v in timetable[d].values() if v not in LUNCH_VALS)]
+        if not active_days:
+            return ""
+
+        th_style = ('style="border:1px solid #c5cae9;padding:7px 10px;background:#1a237e;'
+                    'color:#fff;font-size:11px;font-weight:700;text-align:center;white-space:nowrap"')
+        th_day   = ('style="border:1px solid #c5cae9;padding:7px 10px;background:#283593;'
+                    'color:#fff;font-size:11px;font-weight:700;text-align:center"')
+
+        header = f'<tr><th {th_day}>Day</th>' + \
+                 ''.join(f'<th {th_style}>{s}</th>' for s in SLOTS) + '</tr>'
+
         rows_html = ""
-        for day in day_order:
+        for day in active_days:
+            day_slots = timetable.get(day, {})
+            row = f'<td style="border:1px solid #e0e0e0;padding:7px 10px;font-size:12px;' \
+                  f'font-weight:700;color:#880e4f;background:#fce4ec;text-align:center;' \
+                  f'white-space:nowrap">{day}</td>'
+            for slot in SLOTS:
+                val = day_slots.get(slot, "")
+                if val in LUNCH_VALS:
+                    if val in ("L","U","N","C","H"):
+                        row += (f'<td style="border:1px solid #e0e0e0;padding:4px;'
+                                f'background:#f5f5f5;text-align:center;font-size:13px;'
+                                f'font-weight:900;color:#999">{val}</td>')
+                    elif val == "BREAK":
+                        row += (f'<td style="border:1px solid #e0e0e0;padding:4px;'
+                                f'background:#f5f5f5;text-align:center;font-size:10px;'
+                                f'color:#999">BREAK</td>')
+                    else:
+                        row += f'<td style="border:1px solid #e0e0e0;background:#fafafa"></td>'
+                else:
+                    # Parse "SUBJECT (CLASS)" or "SUBJECT CLASS"
+                    m = re.match(r'^(.+?)\s*\((.+)\)$', val.strip())
+                    subj = m.group(1).strip() if m else val.strip()
+                    cls  = m.group(2).strip() if m else ""
+                    is_lab = any(w in subj.upper() for w in
+                                 ("LAB","WORKSHOP","PROJECT","TUTORIAL"))
+                    bg  = "#fffde7" if is_lab else "#f0f4ff"
+                    col = "#5a4000" if is_lab else "#1a237e"
+                    cls_html = (f'<div style="font-size:9.5px;color:{col};opacity:.75;'
+                                f'margin-top:2px">({cls})</div>') if cls else ""
+                    row += (f'<td style="border:1px solid #e0e0e0;padding:5px 7px;'
+                            f'background:{bg};text-align:center;vertical-align:middle">'
+                            f'<div style="font-size:11px;font-weight:700;color:{col}">{subj}</div>'
+                            f'{cls_html}</td>')
+            rows_html += f'<tr>{row}</tr>'
+
+        return f"""
+<div style="margin-top:0;border-top:1px solid #eee">
+  <div style="padding:9px 16px;background:#f8f9ff;font-size:11px;font-weight:700;
+              color:#888;text-transform:uppercase;letter-spacing:.04em">
+    📅 Weekly Timetable
+  </div>
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:700px">
+      <thead>{header}</thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+  </div>
+</div>"""
+
+    # ── List-of-slots format: {"Monday": [{time, subject, class, type}...]} ──
+    if isinstance(timetable, dict) and not is_slot_format:
+        day_order_long = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+        rows_html = ""
+        for day in day_order_long:
             slots = timetable.get(day, [])
-            # Filter out lunch/break — only show actual classes
             classes = [s for s in slots if s.get("type") not in ("break",)]
             if not classes:
                 continue
@@ -1034,51 +1113,13 @@ def build_faculty_timetable_html(timetable) -> str:
                 subj    = s.get("subject","—")
                 time    = s.get("time","—")
                 cls     = s.get("class","—") or "—"
-                stype   = s.get("type","theory")
-                is_lab  = stype in ("lab","tutorial") or any(w in subj.upper() for w in ("LAB","WORKSHOP","PROJECT","TUTORIAL"))
+                is_lab  = any(w in subj.upper() for w in ("LAB","WORKSHOP","PROJECT","TUTORIAL"))
                 subj_bg  = "#fffde7" if is_lab else "#f0f4ff"
                 subj_col = "#5a4000" if is_lab else "#1a237e"
                 day_cell = (f'<td rowspan="{len(classes)}" style="border:1px solid #e0e0e0;'
                             f'padding:8px 12px;font-size:12px;font-weight:700;color:#880e4f;'
                             f'background:#fce4ec;text-align:center;vertical-align:middle;'
                             f'white-space:nowrap">{day[:3]}</td>') if i == 0 else ""
-                type_badge = (f'<span style="display:inline-block;padding:1px 7px;border-radius:6px;'
-                              f'font-size:10px;font-weight:600;margin-left:6px;'
-                              f'background:{"#fff9c4;color:#f57f17" if is_lab else "#e8eaf6;color:#3949ab"}">'
-                              f'{"LAB" if is_lab else "Theory"}</span>')
-                rows_html += (f'<tr>'
-                              f'{day_cell}'
-                              f'<td style="border:1px solid #e0e0e0;padding:7px 12px;font-size:12px;'
-                              f'white-space:nowrap;color:#333">{time}</td>'
-                              f'<td style="border:1px solid #e0e0e0;padding:7px 12px;font-size:12px;'
-                              f'font-weight:600;background:{subj_bg};color:{subj_col}">'
-                              f'{subj}{type_badge}</td>'
-                              f'<td style="border:1px solid #e0e0e0;padding:7px 12px;font-size:11px;'
-                              f'color:#555">{cls}</td>'
-                              f'</tr>')
-
-    # Old flat list format: [{day, time, subject, class}, ...]
-    elif isinstance(timetable, list):
-        day_order = ["Mon","Tue","Wed","Thu","Fri","Sat"]
-        from collections import OrderedDict
-        grouped = OrderedDict()
-        for d in day_order:
-            grouped[d] = [r for r in timetable if r.get("day") == d]
-        rows_html = ""
-        for day, entries in grouped.items():
-            if not entries:
-                continue
-            for i, e in enumerate(entries):
-                subj    = e.get("subject","—")
-                time    = e.get("time","—")
-                cls     = e.get("class","—")
-                is_lab  = any(w in subj.upper() for w in ("LAB","WORKSHOP","PROJECT"))
-                subj_bg  = "#fffde7" if is_lab else "#f0f4ff"
-                subj_col = "#5a4000" if is_lab else "#1a237e"
-                day_cell = (f'<td rowspan="{len(entries)}" style="border:1px solid #e0e0e0;'
-                            f'padding:8px 12px;font-size:12px;font-weight:700;color:#880e4f;'
-                            f'background:#fce4ec;text-align:center;vertical-align:middle;'
-                            f'white-space:nowrap">{day}</td>') if i == 0 else ""
                 rows_html += (f'<tr>{day_cell}'
                               f'<td style="border:1px solid #e0e0e0;padding:7px 12px;font-size:12px;'
                               f'white-space:nowrap;color:#333">{time}</td>'
@@ -1087,35 +1128,26 @@ def build_faculty_timetable_html(timetable) -> str:
                               f'<td style="border:1px solid #e0e0e0;padding:7px 12px;font-size:11px;'
                               f'color:#555">{cls}</td>'
                               f'</tr>')
-    else:
-        return ""
-
-    if not rows_html:
-        return ""
-
-    th = ('style="border:1px solid #c5cae9;padding:8px 12px;background:#e8eaf6;'
-          'font-size:11px;font-weight:700;color:#1a237e;text-align:left;'
-          'text-transform:uppercase;letter-spacing:.04em"')
-    return f"""
+        if not rows_html:
+            return ""
+        th = ('style="border:1px solid #c5cae9;padding:8px 12px;background:#e8eaf6;'
+              'font-size:11px;font-weight:700;color:#1a237e;text-align:left;'
+              'text-transform:uppercase;letter-spacing:.04em"')
+        return f"""
 <div style="margin-top:0;border-top:1px solid #eee">
   <div style="padding:9px 16px;background:#f8f9ff;font-size:11px;font-weight:700;
-              color:#888;text-transform:uppercase;letter-spacing:.04em">
-    📅 Weekly Timetable
-  </div>
+              color:#888;text-transform:uppercase;letter-spacing:.04em">📅 Weekly Timetable</div>
   <div style="overflow-x:auto">
     <table style="width:100%;border-collapse:collapse;min-width:380px">
-      <thead>
-        <tr>
-          <th {th}>Day</th>
-          <th {th}>Time</th>
-          <th {th}>Subject</th>
-          <th {th}>Class</th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th {th}>Day</th><th {th}>Time</th><th {th}>Subject</th><th {th}>Class</th>
+      </tr></thead>
       <tbody>{rows_html}</tbody>
     </table>
   </div>
 </div>"""
+
+    return ""
 
 
 def build_faculty_card(f):

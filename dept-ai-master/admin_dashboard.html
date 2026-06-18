@@ -1,744 +1,1151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NBKR Admin Dashboard</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',sans-serif;background:#0d0d14;color:#e8eaf6;min-height:100vh}
-.top-bar{background:#1a1a2e;border-bottom:1px solid rgba(255,255,255,.07);
-  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap}
-.top-bar h1{font-size:16px;font-weight:700;background:linear-gradient(90deg,#a78bfa,#818cf8);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
-.top-bar .right{display:flex;align-items:center;gap:10px}
-#pwdInput{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  border-radius:8px;padding:7px 12px;color:#e8eaf6;font-size:13px;width:160px}
-#loginBtn{background:#6366f1;color:#fff;border:none;padding:8px 16px;
-  border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
-#loginBtn:hover{background:#4f46e5}
-#authStatus{font-size:12px;color:#94a3b8}
-a.back-btn{color:#94a3b8;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,.1);
-  padding:6px 12px;border-radius:8px}
-a.back-btn:hover{color:#fff;border-color:#6366f1}
-
-.tabs{display:flex;gap:4px;padding:14px 24px 0;border-bottom:1px solid rgba(255,255,255,.06);
-  flex-wrap:wrap;overflow-x:auto}
-.tab{padding:8px 16px;border-radius:8px 8px 0 0;cursor:pointer;font-size:12.5px;
-  font-weight:500;color:#94a3b8;border:1px solid transparent;border-bottom:none;white-space:nowrap}
-.tab:hover{color:#e8eaf6;background:rgba(255,255,255,.04)}
-.tab.active{color:#a78bfa;background:#1e1e30;border-color:rgba(255,255,255,.08)}
-
-.content{padding:20px 24px;display:none}
-.content.active{display:block}
-
-.section-card{background:#1a1a2e;border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;margin-bottom:18px;overflow:hidden}
-.section-card .ch{padding:12px 16px;background:rgba(255,255,255,.03);
-  border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;
-  justify-content:space-between}
-.section-card .ch h3{font-size:13.5px;font-weight:600;color:#c7d2fe}
-.cb{padding:16px}
-
-.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
-.fg{flex:1;min-width:160px}
-.fg label{display:block;font-size:11px;color:#94a3b8;text-transform:uppercase;
-  letter-spacing:.04em;margin-bottom:4px;font-weight:600}
-.fg input,.fg select,.fg textarea{
-  width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  border-radius:8px;padding:8px 11px;color:#e8eaf6;font-size:13px;font-family:inherit}
-.fg input:focus,.fg select:focus,.fg textarea:focus{
-  outline:none;border-color:#6366f1;background:rgba(99,102,241,.08)}
-.fg select option{background:#1a1a2e}
-.fg textarea{resize:vertical;min-height:70px}
-
-.btn{padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12.5px;
-  font-weight:600;border:none;transition:.15s}
-.btn-add{background:#10b981;color:#fff}.btn-add:hover{background:#059669}
-.btn-del{background:#ef4444;color:#fff}.btn-del:hover{background:#dc2626}
-.btn-save{background:#6366f1;color:#fff}.btn-save:hover{background:#4f46e5}
-.btn-sm{padding:4px 10px;font-size:11.5px}
-
-.data-table{width:100%;border-collapse:collapse;font-size:12.5px}
-.data-table th{background:#0f0f1a;padding:9px 11px;text-align:left;
-  font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;
-  border-bottom:1px solid rgba(255,255,255,.07)}
-.data-table td{padding:8px 11px;border-bottom:1px solid rgba(255,255,255,.04);color:#c7d2fe;
-  word-break:break-word;max-width:260px}
-.data-table tr:hover td{background:rgba(99,102,241,.05)}
-.del-btn{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.2);
-  padding:3px 9px;border-radius:6px;cursor:pointer;font-size:11.5px}
-.del-btn:hover{background:rgba(239,68,68,.3)}
-
-#toast{position:fixed;bottom:24px;right:24px;padding:11px 20px;border-radius:10px;
-  font-size:13px;font-weight:600;z-index:999;display:none}
-#toast.ok{background:#10b981;color:#fff}
-#toast.err{background:#ef4444;color:#fff}
-
-.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-.stat-box{background:#1a1a2e;border:1px solid rgba(255,255,255,.07);border-radius:10px;
-  padding:12px 18px;min-width:100px;text-align:center}
-.stat-box .sv{font-size:24px;font-weight:700;color:#a78bfa}
-.stat-box .sl{font-size:10px;color:#94a3b8;text-transform:uppercase;margin-top:3px}
-
-.badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600}
-.badge-hod{background:#e8eaf6;color:#1a237e}
-.badge-prof{background:#e8f5e9;color:#1b5e20}
-.badge-assoc{background:#fff3e0;color:#e65100}
-.badge-asst{background:#f3e5f5;color:#4a148c}
-
-.audit-row{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);
-  display:flex;gap:14px;font-size:12px}
-.audit-row .at{color:#6366f1;white-space:nowrap;min-width:170px}
-.audit-row .aa{color:#94a3b8}
-</style>
+  <title>NBKR Admin Dashboard</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1; --primary-dark: #4f46e5;
+      --primary-glow: rgba(99,102,241,0.15);
+      --bg-dark: #030712; --panel-bg: rgba(10,15,30,0.45);
+      --glass-border: rgba(255,255,255,0.08);
+      --text-main: #f1f5f9; --text-muted: #94a3b8;
+      --accent-green: #10b981; --accent-red: #ef4444;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Outfit',sans-serif;background:var(--bg-dark);color:var(--text-main);
+      height:100vh;display:flex;justify-content:center;align-items:center;overflow:hidden}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+    @keyframes tabSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .admin-container{position:relative;z-index:1;display:flex;width:98vw;max-width:1600px;
+      height:95vh;background:var(--panel-bg);backdrop-filter:blur(28px);
+      border:1px solid var(--glass-border);border-radius:20px;overflow:hidden;
+      box-shadow:0 25px 50px -12px rgba(0,0,0,.6)}
+    .sidebar{width:260px;min-width:260px;height:100%;background:rgba(8,12,24,.6);
+      border-right:1px solid var(--glass-border);display:flex;flex-direction:column;
+      padding:20px;gap:16px}
+    .sidebar-header{display:flex;align-items:center;gap:10px;padding-bottom:14px;
+      border-bottom:1px solid rgba(255,255,255,.06)}
+    .sidebar-header h2{font-size:17px;font-weight:700;
+      background:linear-gradient(to right,#fff,#c7d2fe);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent}
+    .sidebar-header p{font-size:11px;color:var(--text-muted)}
+    .sidebar-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-bottom:12px;
+      border-bottom:1px solid rgba(255,255,255,.06)}
+    .stat-chip{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+      border-radius:10px;padding:10px;text-align:center}
+    .stat-chip .stat-val{font-size:20px;font-weight:700;color:var(--primary)}
+    .stat-chip .stat-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+    .nav-tabs{display:flex;flex-direction:column;gap:6px;flex:1}
+    .tab-btn{width:100%;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+      padding:11px 14px;border-radius:10px;color:#cbd5e1;font-size:13px;font-weight:500;
+      text-align:left;cursor:pointer;font-family:inherit;transition:all .2s;
+      display:flex;align-items:center;gap:10px;border-left:3px solid transparent}
+    .tab-btn:hover,.tab-btn.active{background:rgba(99,102,241,.08);
+      border-color:rgba(99,102,241,.25);border-left-color:var(--primary);color:#fff}
+    .tab-btn .badge{margin-left:auto;background:rgba(99,102,241,.2);color:#a5b4fc;
+      font-size:11px;font-weight:600;padding:2px 7px;border-radius:9px}
+    .sidebar-footer{display:flex;flex-direction:column;gap:7px}
+    .back-btn{background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.15);
+      color:#a5b4fc;padding:9px;border-radius:10px;cursor:pointer;font-family:inherit;
+      font-size:13px;font-weight:600;text-align:center;text-decoration:none;display:block}
+    .back-btn:hover{background:rgba(99,102,241,.12)}
+    .logout-btn{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);
+      color:#f87171;padding:9px;border-radius:10px;cursor:pointer;font-family:inherit;
+      font-size:13px;font-weight:600;text-align:center}
+    .logout-btn:hover{background:rgba(239,68,68,.15)}
+    .content-pane{flex:1;display:flex;flex-direction:column;height:100%;overflow:hidden;
+      background:rgba(4,6,12,.2)}
+    .header-bar{padding:16px 28px;background:rgba(10,16,32,.6);
+      border-bottom:1px solid var(--glass-border);display:flex;align-items:center;
+      justify-content:space-between}
+    .header-bar h1{font-size:19px;font-weight:700;
+      background:linear-gradient(to right,#fff,#a5b4fc);-webkit-background-clip:text;
+      -webkit-text-fill-color:transparent}
+    .save-status{font-size:12px;font-weight:500;padding:5px 13px;border-radius:18px;
+      display:none;animation:fadeIn .3s}
+    .save-status.success{display:block;background:rgba(16,185,129,.12);color:#34d399;
+      border:1px solid rgba(16,185,129,.3)}
+    .editor-body{flex:1;padding:24px 28px;overflow-y:auto}
+    .editor-body::-webkit-scrollbar{width:5px}
+    .editor-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+    .tab-panel{display:none;animation:tabSlide .3s ease forwards}
+    .tab-panel.active{display:block}
+    .form-group{margin-bottom:16px;display:flex;flex-direction:column;gap:7px}
+    .form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+    label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
+    input,select,textarea{background:rgba(10,15,30,.85);border:1px solid var(--glass-border);
+      color:var(--text-main);padding:10px 14px;border-radius:10px;font-family:inherit;
+      font-size:13px;outline:none;transition:all .2s;width:100%}
+    input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+    textarea{resize:vertical;min-height:90px}
+    .btn-primary{background:linear-gradient(135deg,var(--primary) 0%,#8b5cf6 100%);
+      border:none;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;
+      font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;
+      box-shadow:0 4px 14px rgba(99,102,241,.3);display:inline-flex;align-items:center;gap:7px}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(99,102,241,.4)}
+    .btn-secondary{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+      color:var(--text-main);padding:8px 16px;border-radius:10px;font-size:12px;
+      font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+    .btn-secondary:hover{background:rgba(255,255,255,.1)}
+    .btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);
+      color:#f87171;padding:7px 11px;border-radius:9px;font-size:12px;font-weight:600;
+      cursor:pointer;font-family:inherit;transition:all .2s}
+    .btn-danger:hover{background:rgba(239,68,68,.2)}
+    .editor-section{background:rgba(255,255,255,.015);border:1px solid var(--glass-border);
+      border-radius:16px;padding:20px;margin-bottom:20px;animation:slideUp .3s ease}
+    .flex-header{display:flex;justify-content:space-between;align-items:center;
+      margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:10px}
+    .flex-header h3{font-size:15px;font-weight:600}
+    .split-layout{display:grid;grid-template-columns:260px 1fr;gap:20px}
+    .items-list{border:1px solid var(--glass-border);border-radius:10px;height:440px;
+      overflow-y:auto;background:rgba(0,0,0,.2)}
+    .items-list::-webkit-scrollbar{width:4px}
+    .items-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+    .list-item{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;
+      font-size:13px;transition:all .15s;display:flex;justify-content:space-between;align-items:center}
+    .list-item:hover,.list-item.active{background:rgba(99,102,241,.08);color:#fff}
+    .list-item.active{border-left:3px solid var(--primary)}
+    .form-pane{background:rgba(255,255,255,.005);border:1px solid var(--glass-border);
+      border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+    .admin-table{width:100%;border-collapse:collapse;margin-top:8px;margin-bottom:16px;font-size:12px}
+    .admin-table th{border-bottom:2px solid rgba(255,255,255,.08);padding:10px;font-weight:600;
+      color:var(--text-muted);text-align:left;text-transform:uppercase;font-size:10px;letter-spacing:.5px}
+    .admin-table td{border-bottom:1px solid rgba(255,255,255,.04);padding:8px 10px;vertical-align:middle}
+    .admin-table tr:hover td{background:rgba(255,255,255,.015)}
+    .admin-table input,.admin-table select{padding:6px 10px;font-size:12px;border-radius:7px}
+    /* â”€â”€ Auth Gate â”€â”€ */
+    .auth-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(3,7,18,.9);backdrop-filter:blur(16px);z-index:10000;
+      display:flex;justify-content:center;align-items:center}
+    .auth-card{background:rgba(10,16,32,.75);border:1px solid var(--glass-border);
+      border-radius:22px;padding:38px;width:400px;box-shadow:0 20px 40px rgba(0,0,0,.6);
+      text-align:center;animation:pop .3s cubic-bezier(.1,.8,.25,1)}
+    .auth-card .auth-icon{font-size:46px;margin-bottom:14px;display:block}
+    .auth-card h2{margin-bottom:7px;font-weight:700;font-size:21px}
+    .auth-card p{font-size:13px;color:var(--text-muted);margin-bottom:22px;line-height:1.5}
+    .auth-error{color:#f87171;font-size:13px;margin-top:9px;display:none;animation:fadeIn .2s}
+    /* â”€â”€ Visual Timetable Grid â”€â”€ */
+    .tt-grid-wrap{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,.1)}
+    .tt-grid{border-collapse:collapse;min-width:900px;width:100%;background:#fff;border-radius:10px}
+    .tt-grid th{background:#2d3a6b;color:#fff;padding:9px 10px;font-size:11.5px;
+      font-weight:700;text-align:center;border:1px solid #4a5568;white-space:nowrap}
+    .tt-grid td.day-cell{background:#fce4ec;color:#880e4f;font-weight:700;font-size:12px;
+      padding:8px 10px;text-align:center;border:1px solid #e0b0c0;white-space:nowrap;min-width:60px}
+    .tt-grid td.slot-cell{border:1px solid #ddd;padding:4px;min-width:110px;
+      vertical-align:middle;cursor:pointer;transition:background .15s;position:relative}
+    .tt-grid td.slot-cell:hover{background:rgba(99,102,241,.08)!important}
+    .tt-grid td.slot-cell.empty-cell{background:#fafafa}
+    .slot-inner{border-radius:6px;padding:5px 7px;font-size:11px;font-weight:600;
+      text-align:center;line-height:1.3;min-height:38px;display:flex;flex-direction:column;
+      justify-content:center;align-items:center;cursor:pointer}
+    .slot-inner .subj-name{font-size:11.5px;font-weight:700}
+    .slot-inner .fac-name{font-size:10px;opacity:.75;margin-top:2px}
+    .slot-inner.empty-slot{background:transparent;color:#bbb;font-size:11px}
+    .slot-inner.lunch-slot{background:#f5f5f5;color:#888;font-weight:700;
+      font-size:13px;letter-spacing:1px}
+    /* Cell edit modal */
+    .cell-modal-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:9000;
+      display:none;justify-content:center;align-items:center}
+    .cell-modal-overlay.open{display:flex}
+    .cell-modal{background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:18px;
+      padding:28px;width:480px;max-width:95vw;animation:pop .25s ease}
+    .cell-modal h3{font-size:16px;font-weight:700;margin-bottom:18px;color:#e2e8f0}
+    .cell-modal .modal-info{font-size:12px;color:var(--text-muted);margin-bottom:16px;
+      background:rgba(255,255,255,.04);padding:8px 12px;border-radius:8px}
+    .subject-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+      max-height:260px;overflow-y:auto;margin-bottom:16px}
+    .subject-grid::-webkit-scrollbar{width:4px}
+    .subject-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+    .subj-chip{padding:8px 10px;border-radius:9px;font-size:11.5px;font-weight:600;
+      cursor:pointer;text-align:center;border:2px solid transparent;transition:all .15s;
+      line-height:1.3}
+    .subj-chip:hover{transform:scale(1.04)}
+    .subj-chip.selected{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.3)}
+    .faculty-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;
+      max-height:120px;overflow-y:auto}
+    .fac-chip{padding:5px 11px;border-radius:20px;font-size:11.5px;font-weight:600;
+      cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+      color:#cbd5e1;transition:all .15s}
+    .fac-chip:hover{background:rgba(99,102,241,.15)}
+    .fac-chip.selected{background:rgba(99,102,241,.25);border-color:#6366f1;color:#a5b4fc}
+    .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+    /* Section tabs */
+    .section-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+    .sec-tab{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;
+      cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+      color:#94a3b8;transition:all .2s}
+    .sec-tab:hover{background:rgba(99,102,241,.1)}
+    .sec-tab.active{background:rgba(99,102,241,.2);border-color:#6366f1;color:#a5b4fc}
+    /* Legend */
+    .tt-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .legend-chip{padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600}
+    .grid-two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media(max-width:1024px){
+      .admin-container{flex-direction:column;width:100vw;height:100vh;border-radius:0}
+      .sidebar{width:100%;min-width:auto;flex-direction:row;align-items:center;
+        height:auto;padding:10px 14px;gap:10px;overflow-x:auto}
+      .sidebar-header,.sidebar-stats{display:none}
+      .sidebar-footer{display:flex;flex-direction:row;gap:6px;flex-shrink:0}
+      .back-btn, .logout-btn{white-space:nowrap;padding:7px 12px;font-size:12px;margin:0}
+      .nav-tabs{flex-direction:row;gap:5px;flex-shrink:0}
+      .tab-btn{white-space:nowrap;padding:7px 12px;font-size:12px;border-left:none;
+        border-bottom:2px solid transparent}
+      .tab-btn:hover,.tab-btn.active{border-left-color:transparent;border-bottom-color:var(--primary)}
+      .tab-btn .badge{display:none}
+      .split-layout{grid-template-columns:1fr}
+      .items-list{height:180px}
+      .form-row{grid-template-columns:1fr}
+      .grid-two-col {
+        grid-template-columns: 1fr;
+      }
+      .flex-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+      }
+      .flex-header div {
+        width: 100% !important;
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+      }
+    }
+    @media (max-width: 480px) {
+      .subject-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <h1>🎓 NBKR Admin Dashboard</h1>
-  <div class="right">
-    <input id="pwdInput" type="password" placeholder="Password…">
-    <button id="loginBtn" onclick="login()">Login</button>
-    <span id="authStatus">Not logged in</span>
-    <a class="back-btn" href="/">← Chatbot</a>
-  </div>
-</div>
+<!-- Auth Gate removed - auto-login via URL param or localStorage -->
 
-<div class="tabs" id="tabsRow" style="display:none">
-  <div class="tab active" onclick="showTab('faculty',this)">👥 Faculty</div>
-  <div class="tab" onclick="showTab('fac-tt',this)">📅 Faculty Timetable</div>
-  <div class="tab" onclick="showTab('class-tt',this)">🏫 Class Timetable</div>
-  <div class="tab" onclick="showTab('notices',this)">📢 Notices</div>
-  <div class="tab" onclick="showTab('curriculum',this)">📖 Curriculum</div>
-  <div class="tab" onclick="showTab('students',this)">🎓 Students</div>
-  <div class="tab" onclick="showTab('knowledge',this)">💡 Knowledge Base</div>
-  <div class="tab" onclick="showTab('audit',this)">🔍 Audit Log</div>
-</div>
 
-<!-- ═══ FACULTY ═══ -->
-<div class="content active" id="tab-faculty">
-  <div class="stats-row" id="facStats"></div>
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Faculty</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Name *</label><input id="fac_name" placeholder="Dr. A. Example"></div>
-        <div class="fg"><label>Designation *</label>
-          <select id="fac_desig"><option>Head of the Department</option><option>Professor</option>
-            <option>Associate Professor</option><option selected>Assistant Professor</option></select></div>
-        <div class="fg"><label>Qualification *</label><input id="fac_qual" placeholder="B.Tech, M.Tech, Ph.D"></div>
+<!-- Cell Edit Modal -->
+<div class="cell-modal-overlay" id="cell-modal-overlay">
+  <div class="cell-modal">
+    <h3>✍️ Edit Time Slot</h3>
+    <div class="modal-info" id="modal-info">Monday · 9-10</div>
+    <input type="hidden" id="modal-section"/>
+    <input type="hidden" id="modal-day"/>
+    <input type="hidden" id="modal-slot"/>
+
+    <div class="modal-span-row"></div>
+
+    <label style="margin-bottom:8px;display:block">Select Subject</label>
+    <div class="subject-grid" id="subject-grid"></div>
+
+    <label class="modal-fac-label" style="margin-bottom:8px;display:block">Select Faculty (multi-select)</label>
+    <div class="faculty-chips" id="faculty-chips"></div>
+
+    <div class="modal-actions">
+      <button class="btn-danger" onclick="clearCell()">🗑️ Clear Cell</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn-secondary" onclick="closeCellModal()">Cancel</button>
+        <button class="btn-primary" onclick="applyCell()">✓ Apply</button>
       </div>
-      <div class="form-row">
-        <div class="fg"><label>Date of Joining</label><input id="fac_doj" type="date"></div>
-        <div class="fg"><label>Phone *</label><input id="fac_phone" placeholder="9999999999"></div>
-        <div class="fg"><label>Email *</label><input id="fac_email" placeholder="name@nbkrist.org"></div>
-      </div>
-      <button class="btn btn-add" onclick="addFaculty()">➕ Add Faculty</button>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>👥 Faculty List</h3><span id="facCount" style="font-size:11px;color:#94a3b8"></span></div>
-    <div style="overflow-x:auto">
-      <table class="data-table"><thead><tr>
-        <th>#</th><th>Name</th><th>Designation</th><th>Qualification</th><th>Phone</th><th>Email</th><th>DoJ</th><th>Del</th>
-      </tr></thead><tbody id="facTbody"></tbody></table>
     </div>
   </div>
 </div>
 
-<!-- ═══ FACULTY TIMETABLE ═══ -->
-<div class="content" id="tab-fac-tt">
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Slot to Faculty Timetable</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Faculty Name *</label><select id="ftt_name"></select></div>
-        <div class="fg"><label>Day *</label>
-          <select id="ftt_day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-            <option>Thursday</option><option>Friday</option><option>Saturday</option></select></div>
-        <div class="fg"><label>Time *</label><input id="ftt_time" placeholder="9:00-11:00"></div>
-        <div class="fg"><label>Subject *</label><input id="ftt_subj" placeholder="e.g. NLP"></div>
-        <div class="fg"><label>Class</label><input id="ftt_class" placeholder="e.g. III-II AI_DS-A"></div>
-        <div class="fg"><label>Type</label>
-          <select id="ftt_type"><option value="theory">Theory</option><option value="lab">Lab</option>
-            <option value="tutorial">Tutorial</option></select></div>
-      </div>
-      <button class="btn btn-add" onclick="addFacTT()">➕ Add Slot</button>
+<div class="admin-container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span style="font-size:26px">⚙️</span>
+      <div><h2>NBKR Admin</h2><p>Control Console</p></div>
+    </div>
+    <div class="sidebar-stats">
+      <div class="stat-chip"><div class="stat-val" id="stat-sections">-</div><div class="stat-label">Sections</div></div>
+      <div class="stat-chip"><div class="stat-val" id="stat-faculty">-</div><div class="stat-label">Faculty</div></div>
+      <div class="stat-chip"><div class="stat-val" id="stat-circulars">-</div><div class="stat-label">Notices</div></div>
+      <div class="stat-chip"><div class="stat-val" id="stat-faq">-</div><div class="stat-label">FAQ</div></div>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-timetables')">📅 <span>Timetables</span> <span class="badge" id="badge-tt">0</span></button>
+      <button class="tab-btn" onclick="switchTab('tab-circulars')">📢 <span>Circulars</span> <span class="badge" id="badge-circ">0</span></button>
+      <button class="tab-btn" onclick="switchTab('tab-faculty')">👤 <span>Faculty</span> <span class="badge" id="badge-fac">0</span></button>
+      <button class="tab-btn" onclick="switchTab('tab-knowledge')">💡 <span>FAQ / QA</span> <span class="badge" id="badge-kb">0</span></button>
+    </div>
+    <div class="sidebar-footer">
+      <a href="/" class="back-btn">← Back to Chatbot</a>
+      <button class="logout-btn" onclick="logoutAdmin()">Log Out</button>
     </div>
   </div>
-  <div class="section-card">
-    <div class="ch"><h3>🗑️ Delete Faculty Timetable Slot</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Faculty</label><select id="del_ftt_name"></select></div>
-        <div class="fg"><label>Day</label>
-          <select id="del_ftt_day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-            <option>Thursday</option><option>Friday</option><option>Saturday</option></select></div>
-        <div class="fg"><label>Subject (partial)</label><input id="del_ftt_subj" placeholder="e.g. NLP"></div>
-        <div class="fg" style="display:flex;align-items:flex-end">
-          <button class="btn btn-del" onclick="delFacTT()">🗑️ Delete Slot</button></div>
-      </div>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>📅 Faculty Timetable Viewer</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg" style="max-width:260px"><label>Select Faculty</label><select id="view_ftt" onchange="viewFacTT()"></select></div>
-      </div>
-      <div id="fttView" style="overflow-x:auto;margin-top:12px"></div>
-    </div>
-  </div>
-</div>
 
-<!-- ═══ CLASS TIMETABLE ═══ -->
-<div class="content" id="tab-class-tt">
-  <div class="section-card">
-    <div class="ch"><h3>✏️ Update Class Timetable Slot</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Section *</label><select id="ctt_sec"></select></div>
-        <div class="fg"><label>Day *</label>
-          <select id="ctt_day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option>
-            <option>Thursday</option><option>Friday</option><option>Saturday</option></select></div>
-        <div class="fg"><label>Time Slot *</label><input id="ctt_slot" placeholder="e.g. 9-10 or 9-12"></div>
-        <div class="fg"><label>Value (blank to delete)</label><input id="ctt_val" placeholder="e.g. NLP (VVR)"></div>
-      </div>
-      <button class="btn btn-save" onclick="updateClassTT()">💾 Update Slot</button>
+  <!-- Content -->
+  <div class="content-pane">
+    <div class="header-bar">
+      <h1 id="tab-title">📅 Visual Timetable Editor</h1>
+      <div class="save-status" id="save-status-toast">✓ Saved!</div>
     </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>🏫 Section Timetable Viewer</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg" style="max-width:260px"><label>Select Section</label><select id="view_ctt" onchange="viewClassTT()"></select></div>
-      </div>
-      <div id="cttView" style="overflow-x:auto;margin-top:12px"></div>
-    </div>
-  </div>
-</div>
+    <div class="editor-body">
 
-<!-- ═══ NOTICES ═══ -->
-<div class="content" id="tab-notices">
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Notice / Circular</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Title *</label><input id="ntc_title" placeholder="Notice title"></div>
-        <div class="fg"><label>Date</label><input id="ntc_date" type="date"></div>
-        <div class="fg"><label>Category</label>
-          <select id="ntc_cat"><option>general</option><option>fee</option><option>exam</option>
-            <option>circular</option><option>event</option></select></div>
-        <div class="fg"><label>Applicable To</label><input id="ntc_app" placeholder="e.g. All Students"></div>
-      </div>
-      <div class="form-row">
-        <div class="fg" style="min-width:100%"><label>Content *</label>
-          <textarea id="ntc_content" placeholder="Notice content…" style="min-height:80px"></textarea></div>
-      </div>
-      <button class="btn btn-add" onclick="addNotice()">➕ Add Notice</button>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>📢 Notices List</h3><span id="ntcCount" style="font-size:11px;color:#94a3b8"></span></div>
-    <div style="overflow-x:auto">
-      <table class="data-table"><thead><tr>
-        <th>#</th><th>ID</th><th>Date</th><th>Title</th><th>Category</th><th>Content</th><th>Del</th>
-      </tr></thead><tbody id="ntcTbody"></tbody></table>
-    </div>
-  </div>
-</div>
+      <!-- TIMETABLES TAB -->
+      <div class="tab-panel active" id="tab-timetables">
+        <div class="editor-section">
+          <div class="flex-header">
+            <h3>📅 Select Class Section</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn-secondary" onclick="addNewSection()">➕ New Section</button>
+              <button class="btn-danger" onclick="deleteCurrentSection()">🗑️ Delete Section</button>
+              <button class="btn-primary" id="btn-save-tt" onclick="saveTimetableData()">💾 Save All</button>
+            </div>
+          </div>
+          <div class="section-tabs" id="section-tabs"></div>
+          <!-- Visual timetable grid renders here -->
+          <div id="tt-grid-container"></div>
+          <!-- Legend -->
+          <div class="tt-legend" id="tt-legend"></div>
+        </div>
 
-<!-- ═══ CURRICULUM ═══ -->
-<div class="content" id="tab-curriculum">
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Course</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Semester *</label><select id="cur_sem"></select></div>
-        <div class="fg"><label>Section</label>
-          <select id="cur_section"><option>Electives</option><option>Skill Courses</option>
-            <option>Non-Electives</option><option>Professional Electives I</option>
-            <option>Professional Electives II</option><option>Professional Electives IV</option>
-            <option>Management Course II</option></select></div>
-        <div class="fg"><label>Course Name *</label><input id="cur_course" placeholder="Machine Learning (23AD31T2)"></div>
-        <div class="fg"><label>Lab (or None)</label><input id="cur_lab" placeholder="ML Lab"></div>
+        <!-- Subject & Faculty maps -->
+        <div class="grid-two-col">
+          <div class="editor-section">
+            <div class="flex-header"><h3>📚 Subject Codes</h3></div>
+            <table class="admin-table">
+              <thead><tr><th style="width:110px">Code</th><th>Full Name</th><th style="width:55px">Del</th></tr></thead>
+              <tbody id="subjects-tbody"></tbody>
+            </table>
+            <button class="btn-secondary" onclick="addSubjectRow()">➕ Add Subject</button>
+          </div>
+          <div class="editor-section">
+            <div class="flex-header"><h3>👤 Faculty Initials</h3></div>
+            <table class="admin-table">
+              <thead><tr><th style="width:110px">Initials</th><th>Full Name</th><th style="width:55px">Del</th></tr></thead>
+              <tbody id="faculty-map-tbody"></tbody>
+            </table>
+            <button class="btn-secondary" onclick="addFacultyMapRow()">➕ Add Initials</button>
+          </div>
+        </div>
       </div>
-      <button class="btn btn-add" onclick="addCourse()">➕ Add Course</button>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>🗑️ Delete Course</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Semester</label><select id="del_cur_sem"></select></div>
-        <div class="fg"><label>Section</label>
-          <select id="del_cur_sec"><option>Electives</option><option>Skill Courses</option>
-            <option>Non-Electives</option><option>Professional Electives I</option>
-            <option>Professional Electives II</option><option>Professional Electives IV</option>
-            <option>Management Course II</option></select></div>
-        <div class="fg"><label>Course (partial match)</label><input id="del_cur_course" placeholder="Machine Learning"></div>
-        <div class="fg" style="display:flex;align-items:flex-end">
-          <button class="btn btn-del" onclick="deleteCourse()">🗑️ Delete</button></div>
-      </div>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>📖 Curriculum View</h3></div>
-    <div class="cb" id="curView" style="overflow-x:auto"></div>
-  </div>
-</div>
 
-<!-- ═══ STUDENTS ═══ -->
-<div class="content" id="tab-students">
-  <div class="stats-row" id="stuStats"></div>
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Student</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Roll No *</label><input id="stu_roll" placeholder="23KB1A3001"></div>
-        <div class="fg"><label>Name *</label><input id="stu_name" placeholder="Full name"></div>
-        <div class="fg"><label>Phone</label><input id="stu_phone"></div>
-        <div class="fg"><label>Email</label><input id="stu_email"></div>
+      <!-- CIRCULARS TAB -->
+      <div class="tab-panel" id="tab-circulars">
+        <div class="split-layout">
+          <div>
+            <div class="flex-header"><h3>📢 Notices</h3></div>
+            <div class="items-list" id="circulars-list"></div>
+            <button class="btn-secondary" onclick="addNewCircularForm()" style="width:100%;margin-top:10px">➕ Add Notice</button>
+          </div>
+          <div class="form-pane" id="circular-form-pane">
+            <h3 id="circular-form-title">Edit Circular Notice</h3>
+            <input type="hidden" id="circ-index"/>
+            <div class="form-row">
+              <div class="form-group"><label>Notice ID</label><input type="text" id="circ-id" placeholder="e.g. B-10/2026/01"/></div>
+              <div class="form-group"><label>Date</label><input type="text" id="circ-date" placeholder="e.g. 2026-05-25"/></div>
+            </div>
+            <div class="form-group"><label>Notice Title</label><input type="text" id="circ-title" placeholder="e.g. Tuition Fee Notification"/></div>
+            <div class="form-group"><label>Notice Content</label><textarea id="circ-content" placeholder="Full notice description..."></textarea></div>
+            <div class="form-row">
+              <div class="form-group"><label>Applicable To</label><input type="text" id="circ-applic" placeholder="e.g. 1st and 2nd Year Students"/></div>
+              <div class="form-group"><label>Payment Portal URL</label><input type="text" id="circ-portal" placeholder="e.g. http://nbkriffee.org"/></div>
+            </div>
+            <h4 style="font-size:12px;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:5px">Key Dates (Optional)</h4>
+            <div class="form-row">
+              <div class="form-group"><label>Class Commencement</label><input type="text" id="circ-kd-commence" placeholder="e.g. 2026-06-01"/></div>
+              <div class="form-group"><label>Early Bird Deadline</label><input type="text" id="circ-kd-deadline" placeholder="e.g. 2026-05-30"/></div>
+            </div>
+            <div class="form-group" style="width:50%"><label>Early Bird Discount</label><input type="text" id="circ-kd-discount" placeholder="e.g. 10%"/></div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+              <button class="btn-danger" onclick="deleteCircular()">🗑️ Delete</button>
+              <button class="btn-primary" onclick="saveCircularRecord()">💾 Save Notice</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="fg"><label>Branch</label>
-          <select id="stu_branch"><option>AI&DS</option><option>IT</option></select></div>
-        <div class="fg"><label>Section</label>
-          <select id="stu_sec"><option>A</option><option>B</option><option>C</option><option>D</option><option>-</option></select></div>
-        <div class="fg"><label>CGPA</label><input id="stu_cgpa" type="number" step="0.01" min="0" max="10"></div>
-        <div class="fg"><label>School</label><input id="stu_school"></div>
-      </div>
-      <button class="btn btn-add" onclick="addStudent()">➕ Add Student</button>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>🗑️ Delete Student</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg" style="max-width:220px"><label>Roll No</label><input id="del_roll" placeholder="23KB1A3001"></div>
-        <div class="fg" style="display:flex;align-items:flex-end;max-width:120px">
-          <button class="btn btn-del" onclick="deleteStudent()">🗑️ Delete</button></div>
-      </div>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>🎓 Students</h3><span id="stuCount" style="font-size:11px;color:#94a3b8"></span></div>
-    <div style="overflow-x:auto">
-      <table class="data-table"><thead><tr>
-        <th>#</th><th>Roll No</th><th>Name</th><th>Phone</th><th>Email</th><th>Branch</th><th>Sec</th><th>CGPA</th><th>Del</th>
-      </tr></thead><tbody id="stuTbody"></tbody></table>
-    </div>
-  </div>
-</div>
 
-<!-- ═══ KNOWLEDGE BASE ═══ -->
-<div class="content" id="tab-knowledge">
-  <div class="section-card">
-    <div class="ch"><h3>➕ Add Knowledge Entry</h3></div>
-    <div class="cb">
-      <div class="form-row">
-        <div class="fg"><label>Title *</label><input id="kb_title" placeholder="e.g. Exam Schedule"></div>
+      <!-- FACULTY TAB -->
+      <div class="tab-panel" id="tab-faculty">
+        <div class="split-layout">
+          <div>
+            <div class="flex-header"><h3>👤 Faculty List</h3></div>
+            <div class="items-list" id="faculty-list"></div>
+            <button class="btn-secondary" onclick="addNewFacultyForm()" style="width:100%;margin-top:10px">➕ Add Faculty</button>
+          </div>
+          <div class="form-pane" id="faculty-form-pane">
+            <h3 id="faculty-form-title">Edit Faculty Member</h3>
+            <input type="hidden" id="fac-index"/>
+            <div class="form-group"><label>Full Name</label><input type="text" id="fac-name" placeholder="e.g. Dr. Ramesh Babu K"/></div>
+            <div class="form-row">
+              <div class="form-group"><label>Designation</label>
+                <select id="fac-designation">
+                  <option>Head of the Department</option><option>Professor</option>
+                  <option>Associate Professor</option><option>Assistant Professor</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Specialization</label><input type="text" id="fac-specialization" placeholder="e.g. Machine Learning"/></div>
+            </div>
+            <div class="form-group"><label>Qualifications (comma-separated)</label><textarea id="fac-qualification" placeholder="e.g. M.Tech, Ph.D"></textarea></div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px">
+              <button class="btn-danger" onclick="deleteFaculty()">🗑️ Delete</button>
+              <button class="btn-primary" onclick="saveFacultyRecord()">💾 Save Faculty</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="form-row">
-        <div class="fg" style="min-width:100%"><label>Content *</label>
-          <textarea id="kb_text" placeholder="Enter knowledge content here…" style="min-height:90px"></textarea></div>
+
+      <!-- FAQ TAB -->
+      <div class="tab-panel" id="tab-knowledge">
+        <div class="editor-section">
+          <div class="flex-header">
+            <h3>💡 FAQ Knowledge Base</h3>
+            <button class="btn-secondary" onclick="addKnowledgeRow()">➕ Add QA Item</button>
+          </div>
+          <table class="admin-table">
+            <thead><tr><th style="width:300px">Question Key</th><th>Answer</th><th style="width:60px">Del</th></tr></thead>
+            <tbody id="knowledge-tbody"></tbody>
+          </table>
+        </div>
+        <div style="text-align:right">
+          <button class="btn-primary" onclick="saveKnowledgeData()">💾 Save FAQ Database</button>
+        </div>
       </div>
-      <button class="btn btn-add" onclick="addKB()">➕ Add Entry</button>
-    </div>
-  </div>
-  <div class="section-card">
-    <div class="ch"><h3>💡 Knowledge Base</h3><span id="kbCount" style="font-size:11px;color:#94a3b8"></span></div>
-    <div style="overflow-x:auto">
-      <table class="data-table"><thead><tr>
-        <th>#</th><th>Title</th><th>Content</th><th>Source</th><th>Del</th>
-      </tr></thead><tbody id="kbTbody"></tbody></table>
-    </div>
-  </div>
-</div>
 
-<!-- ═══ AUDIT LOG ═══ -->
-<div class="content" id="tab-audit">
-  <div class="section-card">
-    <div class="ch"><h3>🔍 Recent Admin Actions</h3>
-      <button class="btn btn-save btn-sm" onclick="loadAudit()">🔄 Refresh</button></div>
-    <div id="auditList" style="max-height:600px;overflow-y:auto"></div>
-  </div>
-</div>
-
-<div id="toast"></div>
+    </div><!-- editor-body -->
+  </div><!-- content-pane -->
+</div><!-- admin-container -->
 
 <script>
-let AUTH = '';
-const API = '';
+// ── State ────────────────────────────────────────────────────────────────────
+let serverData = { timetable_data:{timetable:{},subjects:{},faculty:{}}, faculty_data:[], circular_data:[], knowledge_data:{} };
+let activeTab = 'tab-timetables';
+let currentSection = null;
+let adminPwd = '';
 
-function login() {
-  AUTH = document.getElementById('pwdInput').value;
-  api('/admin/faculty/list').then(d => {
-    if (d.error) return toast('Wrong password', true);
-    document.getElementById('authStatus').textContent = '✓ Logged in';
-    document.getElementById('authStatus').style.color = '#10b981';
-    document.getElementById('tabsRow').style.display = 'flex';
-    loadAll();
-  }).catch(() => toast('Connection error', true));
-}
+const SUBJ_COLORS = {
+  LAC:'#cce5ff',EP:'#fff3cd',BEEE:'#f8d7da','CP LAB':'#d4edda',
+  'EP-LAB':'#ffeeba','EEE WS':'#e2d9f3','IT WS':'#d1ecf1',
+  NGCS:'#e2e3e5','ENGINEERING GRAPHICS':'#d6d8f7','INTRODUCTION TO PROGRAMMING':'#ffd8a8',
+  AI:'#cce5ff',IDS:'#e2d9f3',DL_CO:'#d4edda',BE:'#fff3cd',
+  SMDS:'#f8d7da','DTI LAB':'#ffd8a8','IDS LAB':'#d6d8f7',
+  'AI LAB':'#d1ecf1','FULL STACK DEVELOPMENT LAB':'#c3e6cb',
+  SNA:'#d4edda',BDA:'#fff3cd',AIF:'#cce5ff',NLP:'#e2d9f3',
+  DL:'#f8d7da',AWPS:'#ffeeba','TPW.IPR':'#c3e6cb',
+  'DL LAB':'#ffd8a8','BD and DV LAB':'#d1ecf1',
+  WORKSHOP:'#ffd8a8','SOFT SKILLS LAB':'#d4edda'
+};
+const SUBJ_TEXT = {
+  LAC:'#004085',EP:'#856404',BEEE:'#721c24','CP LAB':'#155724',
+  'EP-LAB':'#856404','EEE WS':'#432874','IT WS':'#0c5460',
+  NGCS:'#383d41','ENGINEERING GRAPHICS':'#2d2f8f','INTRODUCTION TO PROGRAMMING':'#7d3c00',
+  AI:'#004085',IDS:'#432874',DL_CO:'#155724',BE:'#856404',
+  SMDS:'#721c24','DTI LAB':'#7d3c00','IDS LAB':'#2d2f8f',
+  'AI LAB':'#0c5460','FULL STACK DEVELOPMENT LAB':'#155724',
+  SNA:'#155724',BDA:'#856404',AIF:'#004085',NLP:'#432874',
+  DL:'#721c24',AWPS:'#856404','TPW.IPR':'#155724',
+  'DL LAB':'#7d3c00','BD and DV LAB':'#0c5460',
+  WORKSHOP:'#7d3c00','SOFT SKILLS LAB':'#155724'
+};
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const ATOMIC_COLS = ['9-10','10-11','11-12','12-1','1-2','2-3','3-4','4-5'];
+const LUNCH_VALS = new Set(['L','U','N','C','H','BREAK','LUNCH']);
 
-function api(url, method, body) {
-  const h = {'X-Admin-Password': AUTH};
-  if (body) h['Content-Type'] = 'application/json';
-  return fetch(API + url, {method: method||'GET', headers: h, body: body ? JSON.stringify(body) : undefined}).then(r => r.json());
-}
-
-function toast(msg, err=false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = err ? 'err' : 'ok';
-  t.style.display = 'block';
-  setTimeout(() => t.style.display = 'none', 3500);
-}
-
-function showTab(name, el) {
-  document.querySelectorAll('.content').forEach(c => c.style.display='none');
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-'+name).style.display = 'block';
-  if (el) el.classList.add('active');
-}
-
-function loadAll() {
-  loadFaculty(); loadStudents(); loadCurriculum(); loadNotices(); loadKB(); loadAudit();
-  loadFacNames(); loadSections();
-}
-
-// ─── FACULTY ─────────────────────────────────────────────────────────────────
-function badge(d) {
-  const m={'Head of the Department':'badge-hod','Professor':'badge-prof','Associate Professor':'badge-assoc','Assistant Professor':'badge-asst'};
-  return `<span class="badge ${m[d]||''}">${d}</span>`;
-}
-
-function loadFaculty() {
-  api('/admin/faculty/list').then(d => {
-    const list = d.faculty||[];
-    document.getElementById('facCount').textContent = list.length + ' members';
-    document.getElementById('facStats').innerHTML = [
-      ['Total', list.length], ['HOD', list.filter(f=>f.designation==='Head of the Department').length],
-      ['Prof', list.filter(f=>f.designation==='Professor').length],
-      ['Assoc', list.filter(f=>f.designation==='Associate Professor').length],
-      ['Asst', list.filter(f=>f.designation==='Assistant Professor').length]
-    ].map(([l,v])=>`<div class="stat-box"><div class="sv">${v}</div><div class="sl">${l}</div></div>`).join('');
-    document.getElementById('facTbody').innerHTML = list.map((f,i)=>`<tr>
-      <td>${i+1}</td><td><b>${f.name||'—'}</b></td><td>${badge(f.designation||'')}</td>
-      <td>${f.Qualification||'—'}</td><td>${f.phone||'—'}</td>
-      <td style="font-size:11px">${f.email||'—'}</td><td>${f.date_of_joining||'—'}</td>
-      <td><button class="del-btn" onclick="delFaculty('${esc(f.name)}')">🗑️</button></td>
-    </tr>`).join('');
-  });
-}
-
-function esc(s){ return (s||'').replace(/'/g,"\\'"); }
-
-function addFaculty() {
-  const b = {name:v('fac_name'),designation:v('fac_desig'),Qualification:v('fac_qual'),
-    date_of_joining:v('fac_doj'),phone:v('fac_phone'),email:v('fac_email'),timetable:{}};
-  if (!b.name||!b.phone||!b.email) return toast('Name, phone, email required',true);
-  api('/admin/faculty/add','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Added: '+d.name);
-    ['fac_name','fac_qual','fac_phone','fac_email','fac_doj'].forEach(i=>document.getElementById(i).value='');
-    loadFaculty(); loadFacNames();
-  });
-}
-function delFaculty(name) {
-  if(!confirm('Delete '+name+'?')) return;
-  api('/admin/faculty/delete','DELETE',{name}).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Deleted: '+name); loadFaculty(); loadFacNames();
-  });
-}
-
-// ─── FACULTY TIMETABLE ───────────────────────────────────────────────────────
-let facNames = [];
-function loadFacNames() {
-  api('/admin/faculty/list').then(d=>{
-    facNames = (d.faculty||[]).map(f=>f.name);
-    ['ftt_name','del_ftt_name','view_ftt'].forEach(id=>{
-      document.getElementById(id).innerHTML = facNames.map(n=>`<option value="${n}">${n}</option>`).join('');
-    });
-  });
-}
-
-function addFacTT() {
-  const b={name:v('ftt_name'),day:v('ftt_day'),time:v('ftt_time'),subject:v('ftt_subj'),
-    class:v('ftt_class'),type:v('ftt_type')};
-  if(!b.name||!b.day||!b.subject||!b.time) return toast('Name, day, time, subject required',true);
-  api('/admin/faculty/timetable/add','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Slot added'); viewFacTT(); loadFaculty();
-  });
-}
-function delFacTT() {
-  const b={name:v('del_ftt_name'),day:v('del_ftt_day'),subject:v('del_ftt_subj')};
-  if(!b.subject) return toast('Subject required',true);
-  if(!confirm('Delete slot?')) return;
-  api('/admin/faculty/timetable/delete','DELETE',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Slot deleted'); viewFacTT();
-  });
-}
-function viewFacTT() {
-  const name = v('view_ftt');
-  api('/admin/faculty/list').then(d=>{
-    const fac = (d.faculty||[]).find(f=>f.name===name);
-    if(!fac) return;
-    const tt = fac.timetable||{};
-    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    let html = '<table class="data-table"><thead><tr><th>Day</th><th>Time</th><th>Subject</th><th>Class</th><th>Type</th></tr></thead><tbody>';
-    days.forEach(day=>{
-      const slots = (tt[day]||[]).filter(s=>s.type!=='break');
-      slots.forEach(s=>{
-        const isLab = s.type==='lab'||s.type==='tutorial';
-        html += `<tr><td style="color:#880e4f;font-weight:700">${day.slice(0,3)}</td>
-          <td>${s.time}</td>
-          <td style="background:${isLab?'#fffde7':'#f0f4ff'};color:${isLab?'#5a4000':'#1a237e'};font-weight:600">${s.subject}</td>
-          <td style="font-size:11px">${s.class||'—'}</td>
-          <td><span style="padding:1px 7px;border-radius:5px;font-size:10.5px;background:${isLab?'#fff9c4':'#e8eaf6'};color:${isLab?'#f57f17':'#3949ab'}">${s.type}</span></td>
-        </tr>`;
-      });
-    });
-    html += '</tbody></table>';
-    document.getElementById('fttView').innerHTML = html||'<p style="color:#94a3b8">No timetable data.</p>';
-  });
-}
-
-// ─── CLASS TIMETABLE ─────────────────────────────────────────────────────────
-let sections = [];
-function loadSections() {
-  api('/admin/timetable/list').then(d=>{
-    sections = Object.keys(d.timetable||{});
-    ['ctt_sec','view_ctt'].forEach(id=>{
-      document.getElementById(id).innerHTML = sections.map(s=>`<option value="${s}">${s.replace(/_/g,' ')}</option>`).join('');
-    });
-  });
-}
-function updateClassTT() {
-  const b={section:v('ctt_sec'),day:v('ctt_day'),slot:v('ctt_slot'),value:v('ctt_val')};
-  if(!b.section||!b.day||!b.slot) return toast('Section, day, slot required',true);
-  api('/admin/timetable/update-slot','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast(b.value?'✓ Slot updated':'✓ Slot deleted'); viewClassTT();
-  });
-}
-function viewClassTT() {
-  const sec = v('view_ctt');
-  api('/admin/timetable/list').then(d=>{
-    const tt = (d.timetable||{})[sec]||{};
-    const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const slots = new Set();
-    days.forEach(day=>Object.keys(tt[day]||{}).forEach(s=>slots.add(s)));
-    const slotArr = ['9-10','10-11','11-12','9-12','12-1','1-2','2-3','3-4','4-5','1-4','2-4'].filter(s=>slots.has(s));
-    let html = `<table class="data-table"><thead><tr><th>Day</th>${slotArr.map(s=>`<th>${s}</th>`).join('')}</tr></thead><tbody>`;
-    days.forEach(day=>{
-      const row = tt[day]||{};
-      html += `<tr><td style="font-weight:700;color:#880e4f">${day.slice(0,3)}</td>`;
-      slotArr.forEach(s=>{ html += `<td style="font-size:11px">${row[s]||'—'}</td>`; });
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-    document.getElementById('cttView').innerHTML = html;
-  });
-}
-
-// ─── NOTICES ─────────────────────────────────────────────────────────────────
-function loadNotices() {
-  api('/admin/notices/list').then(d=>{
-    const list = d.notices||[];
-    document.getElementById('ntcCount').textContent = list.length+' notices';
-    document.getElementById('ntcTbody').innerHTML = list.map((n,i)=>`<tr>
-      <td>${i+1}</td><td style="font-size:11px;color:#6366f1">${n.id||'—'}</td>
-      <td>${n.date||'—'}</td><td><b>${n.title||'—'}</b></td>
-      <td><span style="font-size:11px;color:#94a3b8">${n.category||'—'}</span></td>
-      <td style="font-size:11px;max-width:220px">${(n.content||'').slice(0,80)}${n.content&&n.content.length>80?'…':''}</td>
-      <td><button class="del-btn" onclick="delNotice('${esc(n.id||'')}')">🗑️</button></td>
-    </tr>`).join('');
-  });
-}
-function addNotice() {
-  const b={title:v('ntc_title'),date:v('ntc_date')||new Date().toISOString().slice(0,10),
-    category:v('ntc_cat'),content:v('ntc_content'),applicable_to:v('ntc_app')};
-  if(!b.title||!b.content) return toast('Title and content required',true);
-  api('/admin/notices/add','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Notice added');
-    ['ntc_title','ntc_content','ntc_app'].forEach(i=>document.getElementById(i).value='');
-    loadNotices();
-  });
-}
-function delNotice(id) {
-  if(!confirm('Delete notice '+id+'?')) return;
-  api('/admin/notices/delete','DELETE',{id}).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Notice deleted'); loadNotices();
-  });
-}
-
-// ─── CURRICULUM ──────────────────────────────────────────────────────────────
-function loadCurriculum() {
-  api('/admin/curriculum/list').then(d=>{
-    const sems = d.semesters||[];
-    ['cur_sem','del_cur_sem'].forEach(id=>{
-      document.getElementById(id).innerHTML = sems.map(s=>`<option value="${s}">${s}</option>`).join('');
-    });
-    renderCurriculum(d.curriculum||{});
-  });
-}
-function renderCurriculum(curr) {
-  let html='';
-  for(const[sem,secs] of Object.entries(curr)){
-    html+=`<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:700;color:#a78bfa;
-      padding:7px 12px;background:rgba(99,102,241,.1);border-radius:6px;margin-bottom:6px">${sem}</div>`;
-    for(const[sec,items] of Object.entries(secs)){
-      if(!items||!items.length) continue;
-      html+=`<div style="margin-left:10px;margin-bottom:8px">
-        <div style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:4px">${sec}</div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <tbody>`;
-      items.forEach((item,i)=>{
-        const c=item.Course||item.Option||'—', l=item.Lab||'—';
-        html+=`<tr style="background:${i%2?'':'rgba(255,255,255,.02)'}">
-          <td style="padding:5px 10px;color:#e8eaf6;width:70%">${c}</td>
-          <td style="padding:5px 10px;color:${l==='—'||l==='None'?'#4b5563':'#10b981'}">${l}</td>
-        </tr>`;
-      });
-      html+='</tbody></table></div>';
-    }
-    html+='</div>';
+// Get covered atomic slots dynamically from compound slot keys (e.g. "9-12" -> ["9-10", "10-11", "11-12"])
+function getCoveredSlots(slotKey) {
+  const HOUR_ORDER = ['9', '10', '11', '12', '1', '2', '3', '4', '5'];
+  const parts = slotKey.split('-');
+  if (parts.length !== 2) return [slotKey];
+  const start = parts[0].trim();
+  const end = parts[1].trim();
+  const startIndex = HOUR_ORDER.indexOf(start);
+  const endIndex = HOUR_ORDER.indexOf(end);
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return [slotKey];
   }
-  document.getElementById('curView').innerHTML = html||'<p style="color:#94a3b8">No data.</p>';
-}
-function addCourse() {
-  const b={semester:v('cur_sem'),section:v('cur_section'),course:v('cur_course'),lab:v('cur_lab')||'None'};
-  if(!b.course) return toast('Course required',true);
-  api('/admin/curriculum/add-course','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Course added: '+d.course);
-    document.getElementById('cur_course').value='';
-    document.getElementById('cur_lab').value='';
-    loadCurriculum();
-  });
-}
-function deleteCourse() {
-  const b={semester:v('del_cur_sem'),section:v('del_cur_sec'),course:v('del_cur_course')};
-  if(!b.course) return toast('Course required',true);
-  if(!confirm('Delete "'+b.course+'"?')) return;
-  api('/admin/curriculum/delete-course','DELETE',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Deleted: '+d.course);
-    document.getElementById('del_cur_course').value='';
-    loadCurriculum();
-  });
+  const covered = [];
+  for (let i = startIndex; i < endIndex; i++) {
+    covered.push(`${HOUR_ORDER[i]}-${HOUR_ORDER[i+1]}`);
+  }
+  return covered;
 }
 
-// ─── STUDENTS ────────────────────────────────────────────────────────────────
-function loadStudents() {
-  api('/admin/student/list').then(d=>{
-    const list=d.students||[];
-    document.getElementById('stuCount').textContent=list.length+' records';
-    const aids=list.filter(s=>s.branch&&s.branch.includes('AI')).length;
-    const it=list.filter(s=>s.branch==='IT').length;
-    const cgpa=list.filter(s=>s.cgpa&&s.cgpa!='');
-    const avg=cgpa.length?(cgpa.reduce((a,s)=>a+parseFloat(s.cgpa||0),0)/cgpa.length).toFixed(2):'—';
-    document.getElementById('stuStats').innerHTML=[
-      ['Total',list.length],['AI&DS',aids],['IT',it],['Avg CGPA',avg]
-    ].map(([l,v])=>`<div class="stat-box"><div class="sv">${v}</div><div class="sl">${l}</div></div>`).join('');
-    document.getElementById('stuTbody').innerHTML=list.map((s,i)=>`<tr>
-      <td>${i+1}</td><td><b>${s.roll_no||'—'}</b></td><td>${s.name||'—'}</td>
-      <td>${s.phone||'—'}</td><td style="font-size:11px">${s.email||'—'}</td>
-      <td>${s.branch||'—'}</td><td>${s.section||'—'}</td><td>${s.cgpa||'—'}</td>
-      <td><button class="del-btn" onclick="delStudentRow('${esc(s.roll_no)}')">🗑️</button></td>
-    </tr>`).join('');
-  });
-}
-function addStudent() {
-  const b={roll_no:v('stu_roll').toUpperCase(),name:v('stu_name'),phone:v('stu_phone'),
-    email:v('stu_email'),branch:v('stu_branch'),section:v('stu_sec'),cgpa:v('stu_cgpa'),
-    school:v('stu_school'),tenth_percentage:'',inter_diploma:'',inter_percentage:''};
-  if(!b.roll_no||!b.name) return toast('Roll No and Name required',true);
-  api('/admin/student/add','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Student added: '+b.roll_no);
-    ['stu_roll','stu_name','stu_phone','stu_email','stu_cgpa','stu_school'].forEach(i=>document.getElementById(i).value='');
-    loadStudents();
-  });
-}
-function deleteStudent() {
-  const roll=v('del_roll').toUpperCase();
-  if(!roll) return toast('Enter roll number',true);
-  if(!confirm('Delete '+roll+'?')) return;
-  delStudentRow(roll);
-}
-function delStudentRow(roll) {
-  api('/admin/student/delete','DELETE',{roll_no:roll}).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Deleted: '+roll);
-    document.getElementById('del_roll').value='';
-    loadStudents();
-  });
+// Calculate the end time based on the starting atomic slot and duration span
+function getEndTime(startCol, span) {
+  const HOUR_ORDER = ['9', '10', '11', '12', '1', '2', '3', '4', '5'];
+  const start = startCol.split('-')[0];
+  const startIndex = HOUR_ORDER.indexOf(start);
+  if (startIndex === -1) return '';
+  const endIndex = startIndex + span;
+  if (endIndex >= HOUR_ORDER.length) return HOUR_ORDER[HOUR_ORDER.length - 1];
+  return HOUR_ORDER[endIndex];
 }
 
-// ─── KNOWLEDGE BASE ──────────────────────────────────────────────────────────
-function loadKB() {
-  api('/admin/knowledge/list').then(d=>{
-    const list=d.knowledge||[];
-    document.getElementById('kbCount').textContent=list.length+' entries';
-    document.getElementById('kbTbody').innerHTML=list.map((k,i)=>`<tr>
-      <td>${i+1}</td><td><b>${k.title||'—'}</b></td>
-      <td style="font-size:11px">${(k.text||'').slice(0,100)}${(k.text||'').length>100?'…':''}</td>
-      <td style="font-size:11px;color:#6366f1">${k.source||'admin'}</td>
-      <td><button class="del-btn" onclick="delKB('${esc(k.id||k.title)}')">🗑️</button></td>
-    </tr>`).join('');
-  });
-}
-function addKB() {
-  const b={title:v('kb_title'),text:v('kb_text')};
-  if(!b.title||!b.text) return toast('Title and content required',true);
-  api('/admin/knowledge/add','POST',b).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('✓ Added to knowledge base');
-    document.getElementById('kb_title').value='';
-    document.getElementById('kb_text').value='';
-    loadKB();
-  });
-}
-function delKB(id) {
-  if(!confirm('Delete entry "'+id+'"?')) return;
-  api('/admin/knowledge/delete','DELETE',{id}).then(d=>{
-    if(d.error) return toast(d.error,true);
-    toast('🗑️ Deleted'); loadKB();
-  });
+// Calculate the maximum allowed span from a starting atomic slot to prevent crossing lunch or day-end
+function getMaxSpan(startCol) {
+  const HOUR_ORDER = ['9', '10', '11', '12', '1', '2', '3', '4', '5'];
+  const start = startCol.split('-')[0];
+  const startIndex = HOUR_ORDER.indexOf(start);
+  if (startIndex === -1) return 1;
+  if (start === '12') return 1; // Lunch is always 1 hour
+  if (startIndex < 3) {
+    return 3 - startIndex; // Pre-lunch slots cannot cross 12 PM (index 3)
+  }
+  return HOUR_ORDER.length - 1 - startIndex; // Post-lunch slots cannot cross 5 PM
 }
 
-// ─── AUDIT ───────────────────────────────────────────────────────────────────
-function loadAudit() {
-  api('/admin/audit/list').then(d=>{
-    const list=d.audit||[];
-    document.getElementById('auditList').innerHTML=list.length?
-      list.map(e=>`<div class="audit-row">
-        <span class="at">${(e.ts||'').replace('T',' ').slice(0,19)}</span>
-        <span class="aa">${e.action||'—'}</span>
-      </div>`).join(''):
-      '<p style="padding:16px;color:#94a3b8">No audit entries.</p>';
-  });
+function getCellBg(subj){
+  for(const [k,v] of Object.entries(SUBJ_COLORS)){ if(subj.includes(k)) return [v,SUBJ_TEXT[k]||'#1a1a2e']; }
+  return ['#e8eeff','#1a1a2e'];
 }
+function isLab(subj){
+  const s=subj.toUpperCase();
+  return s.includes('LAB')||s.includes('WORKSHOP')||s.includes('GRAPHICS')||s.includes(' WS');
+}
+function showToast(msg){ const t=document.getElementById('save-status-toast'); t.textContent=msg||'✓ Saved!'; t.className='save-status success'; setTimeout(()=>t.className='save-status',3500); }
 
-// ─── Utility ─────────────────────────────────────────────────────────────────
-function v(id){ return (document.getElementById(id)||{}).value||''; }
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function logoutAdmin(){ localStorage.removeItem('nbkr_admin_pwd'); location.reload(); }
+window.addEventListener('DOMContentLoaded',()=>{
+  // Auto-login: try URL param first, then localStorage, then default password
+  const urlPwd = new URLSearchParams(window.location.search).get('pwd');
+  const savedPwd = localStorage.getItem('nbkr_admin_pwd');
+  const pwd = urlPwd || savedPwd || 'nbkr2026';
 
-document.getElementById('pwdInput').addEventListener('keypress', e => {
-  if(e.key==='Enter') login();
+  fetch('/admin/data',{headers:{'X-Admin-Password':pwd}}).then(r=>{
+    if(r.status===200){
+      adminPwd = pwd;
+      localStorage.setItem('nbkr_admin_pwd', pwd);
+      r.json().then(d=>{ serverData=d; initDashboard(); });
+    }
+  }).catch(()=>{});
 });
-window.addEventListener('load', () => {
-  const p=new URLSearchParams(window.location.search).get('pwd');
-  if(p){ document.getElementById('pwdInput').value=p; login(); }
-});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+function initDashboard(){
+  updateBadges(); renderSectionTabs(); renderSubjectsTable(); renderFacultyMapTable();
+  renderCircularsList(); renderFacultyList(); renderKnowledgeTable();
+}
+function updateBadges(){
+  const tt=Object.keys(serverData.timetable_data.timetable||{}).length;
+  const circ=(serverData.circular_data||[]).length;
+  const fac=(serverData.faculty_data||[]).length;
+  const kb=Object.keys(serverData.knowledge_data||{}).length;
+  document.getElementById('badge-tt').textContent=tt;
+  document.getElementById('badge-circ').textContent=circ;
+  document.getElementById('badge-fac').textContent=fac;
+  document.getElementById('badge-kb').textContent=kb;
+  document.getElementById('stat-sections').textContent=tt;
+  document.getElementById('stat-faculty').textContent=fac;
+  document.getElementById('stat-circulars').textContent=circ;
+  document.getElementById('stat-faq').textContent=kb;
+}
+function switchTab(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{ if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes(id)) b.classList.add('active'); });
+  const titles={'tab-timetables':'📅 Visual Timetable Editor','tab-circulars':'📢 Circulars & Notices','tab-faculty':'👤 Faculty Management','tab-knowledge':'💡 FAQ Knowledge Base'};
+  document.getElementById('tab-title').textContent=titles[id]||'Admin';
+  activeTab=id;
+}
+</script>
+
+<script>
+// ── Section tabs ─────────────────────────────────────────────────────────────
+function renderSectionTabs(){
+  const container=document.getElementById('section-tabs');
+  const sections=Object.keys(serverData.timetable_data.timetable||{});
+  container.innerHTML='';
+  sections.forEach(sec=>{
+    const btn=document.createElement('button');
+    btn.className='sec-tab'+(sec===currentSection?' active':'');
+    btn.textContent=sec.replace(/_/g,' ');
+    btn.onclick=()=>selectSection(sec);
+    container.appendChild(btn);
+  });
+  if(!currentSection && sections.length>0) selectSection(sections[0]);
+  else if(currentSection) renderTimetableGrid(currentSection);
+  else document.getElementById('tt-grid-container').innerHTML=
+    '<p style="color:#94a3b8;padding:20px;text-align:center">No sections yet — click ➕ New Section to start.</p>';
+}
+function selectSection(sec){
+  currentSection=sec;
+  document.querySelectorAll('.sec-tab').forEach(b=>b.classList.toggle('active',b.textContent===sec.replace(/_/g,' ')));
+  renderTimetableGrid(sec);
+}
+
+// ── Timetable grid ───────────────────────────────────────────────────────────
+function renderTimetableGrid(sectionKey){
+  const tt=serverData.timetable_data.timetable||{};
+  const data=tt[sectionKey]||{};
+  const subjectMap=serverData.timetable_data.subjects||{};
+  const activeCols=ATOMIC_COLS;
+
+  let html='<div class="tt-grid-wrap"><table class="tt-grid"><thead><tr><th>Day \\ Hour</th>';
+  activeCols.forEach(c=>{
+    if(c==='12-1') html+='<th style="background:#555;width:52px;min-width:52px">12-1<br><small style="font-weight:400;opacity:.8">Lunch</small></th>';
+    else html+=`<th>${c.replace('-',' - ')}</th>`;
+  });
+  html+='</tr></thead><tbody>';
+
+  DAYS.forEach(day=>{
+    const dayData=data[day]||{};
+    const colMap={};
+    Object.entries(dayData).forEach(([slot,val])=>{
+      const covered=getCoveredSlots(slot).filter(c=>activeCols.includes(c));
+      if(!covered.length) return;
+      colMap[covered[0]]={val,span:covered.length};
+      covered.slice(1).forEach(c=>colMap[c]={skip:true});
+    });
+    html+=`<tr><td class="day-cell">${day.substring(0,3)}</td>`;
+    activeCols.forEach(col=>{
+      if(colMap[col]&&colMap[col].skip) return;
+      const entry=colMap[col];
+      html+=buildCellHTML(sectionKey,day,col,entry?entry.val:'',entry?entry.span:1);
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('tt-grid-container').innerHTML=html;
+
+  const usedSubj=new Set();
+  Object.values(data).forEach(dd=>Object.values(dd).forEach(val=>{
+    if(val && val !== '-'){
+      const m=val.match(/^(.+?)\s*\((.+)\)$/);
+      const s=m?m[1].trim():val.trim();
+      if(!LUNCH_VALS.has(s)) usedSubj.add(s);
+    }
+  }));
+  let leg='';
+  usedSubj.forEach(s=>{ const [bg,fg]=getCellBg(s); leg+=`<span class="legend-chip" style="background:${bg};color:${fg}">( ${s} ) ${subjectMap[s]||''}</span>`; });
+  document.getElementById('tt-legend').innerHTML=leg;
+}
+
+function buildCellHTML(section,day,col,val,span){
+  span=span||1;
+  const enc=s=>s.replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  const onclick=`openCellModal('${enc(section)}','${enc(day)}','${enc(col)}')`;
+  const cs=span>1?` colspan="${span}"`:'';
+  const lunchSt='background:#f0f0f0;width:52px;min-width:52px';
+  if(!val||val==='-'){
+    if(col==='12-1') return `<td${cs} class="slot-cell" onclick="${onclick}" style="${lunchSt}"><div class="slot-inner empty-slot" style="color:#bbb;font-size:20px">+</div></td>`;
+    return `<td${cs} class="slot-cell empty-cell" onclick="${onclick}"><div class="slot-inner empty-slot">+</div></td>`;
+  }
+  if(LUNCH_VALS.has(val.trim())){
+    const br=val.trim()==='BREAK';
+    return `<td${cs} class="slot-cell" onclick="${onclick}" style="${lunchSt}"><div class="slot-inner lunch-slot" style="font-size:${br?'11':'15'}px;font-weight:900;color:#666;font-style:${br?'normal':'italic'}">${val}</div></td>`;
+  }
+  const m=val.match(/^(.+?)\s*\((.+)\)$/);
+  const subj=m?m[1].trim():val.trim(), fac=m?m[2].trim():'';
+  let bg,fg;
+  if(isLab(subj)||span>=3){bg='#ffe066';fg='#5a4000';}
+  else{[bg,fg]=getCellBg(subj);}
+  return `<td${cs} class="slot-cell" onclick="${onclick}" style="background:${bg}"><div class="slot-inner" style="background:${bg};color:${fg}"><div class="subj-name">${subj}</div>${fac?`<div class="fac-name">( ${fac} )</div>`:''}</div></td>`;
+}
+
+// ── Cell Edit Modal ────────────────────────────────────────────────────────
+let selectedSubject='', selectedFaculty=[], selectedSpan=1;
+let modalStartCol = '';
+let modalOriginalSlotKey = '';
+
+function openCellModal(section,day,col){
+  document.getElementById('modal-section').value=section;
+  document.getElementById('modal-day').value=day;
+  document.getElementById('modal-slot').value=col;
+
+  const tt=serverData.timetable_data.timetable||{};
+  const dayData=(tt[section]&&tt[section][day])||{};
+  
+  let existingVal='';
+  modalOriginalSlotKey = '';
+  modalStartCol = col;
+  selectedSpan = 1;
+
+  // Check if this clicked column is covered by any existing slot
+  for (const [slotKey, val] of Object.entries(dayData)) {
+    const covered = getCoveredSlots(slotKey);
+    if (covered.includes(col)) {
+      existingVal = val;
+      modalOriginalSlotKey = slotKey;
+      modalStartCol = covered[0]; // The actual start of the slot
+      selectedSpan = covered.length; // The duration of the slot
+      break;
+    }
+  }
+
+  // Pre-fill subject and faculty
+  if (existingVal) {
+    const m = existingVal.match(/^(.+?)\s*\((.+)\)$/);
+    if (m) {
+      selectedSubject = m[1].trim();
+      selectedFaculty = m[2].split(',').map(f => f.trim());
+    } else {
+      selectedSubject = existingVal.trim();
+      selectedFaculty = [];
+    }
+  } else {
+    selectedSubject = '';
+    selectedFaculty = [];
+  }
+
+  // Display the edit info
+  const displayStart = modalStartCol.split('-')[0];
+  const displayEnd = getEndTime(modalStartCol, selectedSpan);
+  document.getElementById('modal-info').textContent = 
+    `${section.replace(/_/g, ' ')} · ${day} · ${displayStart} - ${displayEnd}`;
+
+  buildModalUI(col);
+  document.getElementById('cell-modal-overlay').classList.add('open');
+}
+
+function buildModalUI(col){
+  const isLunchCol=(col==='12-1');
+  const modal=document.querySelector('.cell-modal');
+
+  if(isLunchCol){
+    // Lunch column: show L/U/N/C/H/BREAK only
+    modal.querySelector('#subject-grid').innerHTML=
+      ['L','U','N','C','H','BREAK'].map(v=>`<div class="subj-chip ${selectedSubject===v?'selected':''}"
+        style="background:#f0f0f0;color:#555;font-size:${v==='BREAK'?'12':'18'}px;font-weight:900;font-style:${v==='BREAK'?'normal':'italic'}"
+        onclick="selectSubject('${v}')">${v}</div>`).join('');
+    modal.querySelector('#faculty-chips').innerHTML='';
+    
+    // Hide span + faculty labels
+    document.querySelectorAll('.modal-span-row,.modal-fac-label,#faculty-chips').forEach(el=>el.style.display='none');
+    return;
+  }
+  
+  // Show span + faculty
+  document.querySelectorAll('.modal-span-row,.modal-fac-label,#faculty-chips').forEach(el=>el.style.display='');
+
+  // Render Span / Duration buttons dynamically
+  const maxSpan = getMaxSpan(modalStartCol);
+  
+  // Ensure selectedSpan is within bounds
+  if (selectedSpan > maxSpan) selectedSpan = 1;
+
+  const spanRow=document.querySelector('.modal-span-row');
+  if(spanRow) {
+    let spanButtonsHtml = `<label style="margin-bottom:6px;display:block;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase">Duration</label>
+      <div style="display:flex;gap:8px;margin-bottom:14px">`;
+    for (let n = 1; n <= maxSpan; n++) {
+      const activeStyle = selectedSpan === n ? 'border-color:#6366f1;background:rgba(99,102,241,.2);color:#a5b4fc' : '';
+      spanButtonsHtml += `<button onclick="setSpan(${n})" id="span-btn-${n}" class="btn-secondary" style="flex:1;padding:8px;${activeStyle}">${n} hr${n>1?'s':''}</button>`;
+    }
+    spanButtonsHtml += `</div>`;
+    spanRow.innerHTML = spanButtonsHtml;
+  }
+
+  renderSubjectGrid();
+  renderFacultyChips();
+}
+
+function setSpan(n){
+  selectedSpan=n;
+  const maxSpan = getMaxSpan(modalStartCol);
+  for (let i = 1; i <= maxSpan; i++) {
+    const b = document.getElementById('span-btn-' + i);
+    if (!b) continue;
+    b.style.borderColor = i === n ? '#6366f1' : '';
+    b.style.background = i === n ? 'rgba(99,102,241,.2)' : '';
+    b.style.color = i === n ? '#a5b4fc' : '';
+  }
+
+  const section = document.getElementById('modal-section').value;
+  const day = document.getElementById('modal-day').value;
+  const displayStart = modalStartCol.split('-')[0];
+  const displayEnd = getEndTime(modalStartCol, selectedSpan);
+  document.getElementById('modal-info').textContent = 
+    `${section.replace(/_/g, ' ')} · ${day} · ${displayStart} - ${displayEnd}`;
+}
+
+function closeCellModal(){document.getElementById('cell-modal-overlay').classList.remove('open');}
+
+function renderSubjectGrid(){
+  const subjects=serverData.timetable_data.subjects||{};
+  let html='';
+  Object.keys(subjects).forEach(code=>{
+    const labSubj=isLab(code);
+    const [bg,fg]=labSubj?['#ffe066','#5a4000']:getCellBg(code);
+    const sel=selectedSubject===code?'selected':'';
+    html+=`<div class="subj-chip ${sel}" style="background:${bg};color:${fg};${labSubj?'border:2px solid #c8a000':''}" onclick="selectSubject('${code.replace(/'/g,"\\'")}')">
+      <div style="font-weight:700">${code}</div><div style="font-size:9px;opacity:.7;margin-top:1px">${subjects[code]||''}</div></div>`;
+  });
+  document.getElementById('subject-grid').innerHTML=html;
+}
+
+function renderFacultyChips(){
+  const faculty=serverData.timetable_data.faculty||{};
+  document.getElementById('faculty-chips').innerHTML=Object.entries(faculty).map(([init,name])=>
+    `<div class="fac-chip ${selectedFaculty.includes(init)?'selected':''}" onclick="toggleFaculty('${init.replace(/'/g,"\\'")}')"><b>${init}</b> — ${name}</div>`).join('');
+}
+
+function selectSubject(code){
+  selectedSubject=code;
+  document.querySelectorAll('.subj-chip').forEach(c=>{
+    const d=c.querySelector('div'); c.classList.toggle('selected',d?d.textContent===code:c.textContent.trim()===code);
+  });
+  if(isLab(code)){
+    const maxSpan = getMaxSpan(modalStartCol);
+    if(maxSpan >= 3 && selectedSpan < 3) setSpan(3);
+    else if(maxSpan < 3 && selectedSpan < maxSpan) setSpan(maxSpan);
+  }
+}
+
+function toggleFaculty(init){
+  const idx=selectedFaculty.indexOf(init);
+  if(idx>=0) selectedFaculty.splice(idx,1); else selectedFaculty.push(init);
+  document.querySelectorAll('.fac-chip').forEach(c=>{
+    const b=c.querySelector('b'); if(b&&b.textContent===init) c.classList.toggle('selected',selectedFaculty.includes(init));
+  });
+}
+
+function applyCell(){
+  const section=document.getElementById('modal-section').value;
+  const day=document.getElementById('modal-day').value;
+  
+  if(!selectedSubject){closeCellModal();return;}
+  let val=selectedSubject;
+  if(selectedFaculty.length>0&&!LUNCH_VALS.has(selectedSubject)) val+=` (${selectedFaculty.join(', ')})`;
+  
+  const tt=serverData.timetable_data.timetable;
+  if(!tt[section]) tt[section]={};
+  if(!tt[section][day]) tt[section][day]={};
+  
+  // 1. Delete original slot key
+  if(modalOriginalSlotKey) {
+    delete tt[section][day][modalOriginalSlotKey];
+  }
+
+  // 2. Determine new slot key
+  const displayStart = modalStartCol.split('-')[0];
+  const displayEnd = getEndTime(modalStartCol, selectedSpan);
+  const newSlotKey = `${displayStart}-${displayEnd}`;
+
+  // 3. Find and remove overlapping slots
+  const newCovered = getCoveredSlots(newSlotKey);
+  Object.keys(tt[section][day]).forEach(slotKey => {
+    const covered = getCoveredSlots(slotKey);
+    if (covered.some(c => newCovered.includes(c))) {
+      delete tt[section][day][slotKey];
+    }
+  });
+
+  // 4. Save new slot
+  tt[section][day][newSlotKey]=val;
+
+  closeCellModal(); 
+  renderTimetableGrid(section);
+}
+
+function clearCell(){
+  const section=document.getElementById('modal-section').value;
+  const day=document.getElementById('modal-day').value;
+  const tt=serverData.timetable_data.timetable;
+  
+  if(tt[section]&&tt[section][day]&&modalOriginalSlotKey){
+    delete tt[section][day][modalOriginalSlotKey];
+  }
+  
+  closeCellModal(); 
+  renderTimetableGrid(section);
+}
+document.getElementById('cell-modal-overlay').addEventListener('click',function(e){if(e.target===this)closeCellModal();});
+</script>
+
+<script>
+// ── Section management ──────────────────────────────────────────────────────
+function addNewSection() {
+  const name = prompt("Enter new section name (e.g. 1st_Year_Section_C):");
+  if (!name) return;
+  const cleanName = name.trim().replace(/\s+/g, '_');
+  if (!serverData.timetable_data.timetable) {
+    serverData.timetable_data.timetable = {};
+  }
+  if (serverData.timetable_data.timetable[cleanName]) {
+    alert("Section already exists!");
+    return;
+  }
+  
+  // Initialize empty days
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  serverData.timetable_data.timetable[cleanName] = {};
+  days.forEach((day, idx) => {
+    // Mon-Fri uses L, U, N, C, H; Saturday uses BREAK for the 12-1 slot
+    const lunchLetters = ["L", "U", "N", "C", "H"];
+    serverData.timetable_data.timetable[cleanName][day] = {
+      "12-1": day === "Saturday" ? "BREAK" : lunchLetters[idx]
+    };
+  });
+  
+  currentSection = cleanName;
+  renderSectionTabs();
+  updateBadges();
+  showToast("✓ Section added. Click 'Save All' to persist.");
+}
+
+function deleteCurrentSection() {
+  if (!currentSection) return;
+  if (!confirm(`Are you sure you want to delete the section "${currentSection.replace(/_/g, ' ')}"?`)) return;
+  
+  delete serverData.timetable_data.timetable[currentSection];
+  
+  const sections = Object.keys(serverData.timetable_data.timetable || {});
+  if (sections.length > 0) {
+    currentSection = sections[0];
+  } else {
+    currentSection = null;
+  }
+  
+  renderSectionTabs();
+  updateBadges();
+  showToast("✓ Section deleted. Click 'Save All' to persist.");
+}
+
+// ── Subject & Faculty map tables ─────────────────────────────────────────────
+function renderSubjectsTable(){
+  const subjects=serverData.timetable_data.subjects||{};
+  let html='';
+  Object.entries(subjects).forEach(([code,name])=>{
+    const escapedCode = code.replace(/"/g, '&quot;');
+    const escapedName = name.replace(/"/g, '&quot;');
+    html+=`<tr>
+      <td><input value="${escapedCode}" data-old-code="${escapedCode}" onchange="onSubjectCodeChange(this)" style="width:100%"/></td>
+      <td><input value="${escapedName}" data-code="${escapedCode}" onchange="onSubjectNameChange(this)" style="width:100%"/></td>
+      <td><button class="btn-danger" data-code="${escapedCode}" onclick="onSubjectDelete(this)">✖</button></td>
+    </tr>`;
+  });
+  document.getElementById('subjects-tbody').innerHTML=html;
+}
+function addSubjectRow(){
+  const code=prompt('Subject code (e.g. ML):'); if(!code) return;
+  const name=prompt('Full name:'); if(!name) return;
+  serverData.timetable_data.subjects[code.trim()]=name.trim();
+  renderSubjectsTable();
+}
+function onSubjectCodeChange(input) {
+  const oldCode = input.getAttribute('data-old-code');
+  const newCode = input.value.trim();
+  if (!newCode) {
+    input.value = oldCode;
+    return;
+  }
+  if (oldCode !== newCode) {
+    serverData.timetable_data.subjects[newCode] = serverData.timetable_data.subjects[oldCode];
+    delete serverData.timetable_data.subjects[oldCode];
+    renderSubjectsTable();
+  }
+}
+function onSubjectNameChange(input) {
+  const code = input.getAttribute('data-code');
+  serverData.timetable_data.subjects[code] = input.value.trim();
+}
+function onSubjectDelete(button) {
+  const code = button.getAttribute('data-code');
+  if (confirm(`Delete subject "${code}"?`)) {
+    delete serverData.timetable_data.subjects[code];
+    renderSubjectsTable();
+  }
+}
+
+function renderFacultyMapTable(){
+  const faculty=serverData.timetable_data.faculty||{};
+  let html='';
+  Object.entries(faculty).forEach(([init,name])=>{
+    const escapedInit = init.replace(/"/g, '&quot;');
+    const escapedName = name.replace(/"/g, '&quot;');
+    html+=`<tr>
+      <td><input value="${escapedInit}" data-old-init="${escapedInit}" onchange="onFacultyInitChange(this)" style="width:100%"/></td>
+      <td><input value="${escapedName}" data-init="${escapedInit}" onchange="onFacultyNameChange(this)" style="width:100%"/></td>
+      <td><button class="btn-danger" data-init="${escapedInit}" onclick="onFacultyMapDelete(this)">✖</button></td>
+    </tr>`;
+  });
+  document.getElementById('faculty-map-tbody').innerHTML=html;
+}
+function addFacultyMapRow(){
+  const init=prompt('Faculty initials (e.g. ANR):'); if(!init) return;
+  const name=prompt('Full name:'); if(!name) return;
+  serverData.timetable_data.faculty[init.trim()]=name.trim();
+  renderFacultyMapTable();
+}
+function onFacultyInitChange(input) {
+  const oldInit = input.getAttribute('data-old-init');
+  const newInit = input.value.trim();
+  if (!newInit) {
+    input.value = oldInit;
+    return;
+  }
+  if (oldInit !== newInit) {
+    serverData.timetable_data.faculty[newInit] = serverData.timetable_data.faculty[oldInit];
+    delete serverData.timetable_data.faculty[oldInit];
+    renderFacultyMapTable();
+  }
+}
+function onFacultyNameChange(input) {
+  const init = input.getAttribute('data-init');
+  serverData.timetable_data.faculty[init] = input.value.trim();
+}
+function onFacultyMapDelete(button) {
+  const init = button.getAttribute('data-init');
+  if (confirm(`Delete faculty initials "${init}"?`)) {
+    delete serverData.timetable_data.faculty[init];
+    renderFacultyMapTable();
+  }
+}
+
+// ── Save timetable ───────────────────────────────────────────────────────────
+function saveTimetableData(){
+  const btn=document.getElementById('btn-save-tt');
+  btn.textContent='Saving…'; btn.classList.add('saving');
+  fetch('/admin/save-timetable',{
+    method:'POST', headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+    body:JSON.stringify(serverData.timetable_data)
+  }).then(r=>r.json()).then(d=>{
+    btn.textContent='💾 Save All'; btn.classList.remove('saving');
+    showToast(d.message||'✓ Timetable saved!');
+  }).catch(()=>{ btn.textContent='💾 Save All'; btn.classList.remove('saving'); showToast('✖ Save failed'); });
+}
+
+// ── Circulars ────────────────────────────────────────────────────────────────
+function renderCircularsList(){
+  const list=document.getElementById('circulars-list'); list.innerHTML='';
+  (serverData.circular_data||[]).forEach((c,i)=>{
+    const div=document.createElement('div'); div.className='list-item';
+    div.innerHTML=`<div><div style="font-weight:600">${c.title||'Untitled'}</div><div class="item-sub">${c.id||''} · ${c.date||''}</div></div>`;
+    div.onclick=()=>editCircular(i); list.appendChild(div);
+  });
+}
+function editCircular(i){
+  const c=serverData.circular_data[i];
+  document.getElementById('circ-index').value=i;
+  document.getElementById('circ-id').value=c.id||'';
+  document.getElementById('circ-date').value=c.date||'';
+  document.getElementById('circ-title').value=c.title||'';
+  document.getElementById('circ-content').value=c.content||'';
+  document.getElementById('circ-applic').value=c.applicable_to||'';
+  document.getElementById('circ-portal').value=c.payment_portal||'';
+  const kd=c.key_dates||{};
+  document.getElementById('circ-kd-commence').value=kd.class_commencement||'';
+  document.getElementById('circ-kd-deadline').value=kd.early_bird_deadline||'';
+  document.getElementById('circ-kd-discount').value=kd.early_bird_discount||'';
+  document.querySelectorAll('#circulars-list .list-item').forEach((el,j)=>el.classList.toggle('active',j===i));
+}
+function addNewCircularForm(){
+  serverData.circular_data.push({id:'',date:'',title:'New Notice',content:'',applicable_to:'',payment_portal:'',key_dates:{}});
+  renderCircularsList(); editCircular(serverData.circular_data.length-1);
+}
+function saveCircularRecord(){
+  const i=parseInt(document.getElementById('circ-index').value);
+  if(isNaN(i)) return;
+  serverData.circular_data[i]={
+    id:document.getElementById('circ-id').value,
+    date:document.getElementById('circ-date').value,
+    title:document.getElementById('circ-title').value,
+    content:document.getElementById('circ-content').value,
+    applicable_to:document.getElementById('circ-applic').value,
+    payment_portal:document.getElementById('circ-portal').value,
+    key_dates:{
+      class_commencement:document.getElementById('circ-kd-commence').value,
+      early_bird_deadline:document.getElementById('circ-kd-deadline').value,
+      early_bird_discount:document.getElementById('circ-kd-discount').value
+    }
+  };
+  fetch('/admin/save-circular',{
+    method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+    body:JSON.stringify(serverData.circular_data)
+  }).then(r=>r.json()).then(d=>{ renderCircularsList(); updateBadges(); showToast(d.message||'✓ Saved'); });
+}
+function deleteCircular(){
+  const i=parseInt(document.getElementById('circ-index').value); if(isNaN(i)) return;
+  if(!confirm('Delete this notice?')) return;
+  serverData.circular_data.splice(i,1);
+  fetch('/admin/save-circular',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(serverData.circular_data)})
+    .then(()=>{ 
+      renderCircularsList(); 
+      updateBadges(); 
+      showToast('✓ Deleted'); 
+      // Clear form inputs
+      document.getElementById('circ-index').value='';
+      document.getElementById('circ-id').value='';
+      document.getElementById('circ-date').value='';
+      document.getElementById('circ-title').value='';
+      document.getElementById('circ-content').value='';
+      document.getElementById('circ-applic').value='';
+      document.getElementById('circ-portal').value='';
+      document.getElementById('circ-kd-commence').value='';
+      document.getElementById('circ-kd-deadline').value='';
+      document.getElementById('circ-kd-discount').value='';
+    });
+}
+</script>
+
+<script>
+// â”€â”€ Faculty â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function renderFacultyList(){
+  const list=document.getElementById('faculty-list'); list.innerHTML='';
+  (serverData.faculty_data||[]).forEach((f,i)=>{
+    const div=document.createElement('div'); div.className='list-item';
+    div.innerHTML=`<div><div style="font-weight:600">${f.name||'Unnamed'}</div><div class="item-sub">${f.designation||''}</div></div>`;
+    div.onclick=()=>editFaculty(i); list.appendChild(div);
+  });
+}
+function editFaculty(i){
+  const f=serverData.faculty_data[i];
+  document.getElementById('fac-index').value=i;
+  document.getElementById('fac-name').value=f.name||'';
+  document.getElementById('fac-designation').value=f.designation||'Assistant Professor';
+  document.getElementById('fac-specialization').value=f.specialization||'';
+  document.getElementById('fac-qualification').value=f.Qualification||'';
+  document.querySelectorAll('#faculty-list .list-item').forEach((el,j)=>el.classList.toggle('active',j===i));
+}
+function addNewFacultyForm(){
+  serverData.faculty_data.push({name:'New Faculty',designation:'Assistant Professor',specialization:'',Qualification:''});
+  renderFacultyList(); editFaculty(serverData.faculty_data.length-1);
+}
+function saveFacultyRecord(){
+  const i=parseInt(document.getElementById('fac-index').value); if(isNaN(i)) return;
+  serverData.faculty_data[i]={
+    name:document.getElementById('fac-name').value,
+    designation:document.getElementById('fac-designation').value,
+    specialization:document.getElementById('fac-specialization').value,
+    Qualification:document.getElementById('fac-qualification').value
+  };
+  fetch('/admin/save-faculty',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(serverData.faculty_data)})
+    .then(r=>r.json()).then(d=>{ renderFacultyList(); updateBadges(); showToast(d.message||'âœ“ Saved'); });
+}
+function deleteFaculty(){
+  const i=parseInt(document.getElementById('fac-index').value); if(isNaN(i)) return;
+  if(!confirm('Delete this faculty member?')) return;
+  serverData.faculty_data.splice(i,1);
+  fetch('/admin/save-faculty',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(serverData.faculty_data)})
+    .then(()=>{ renderFacultyList(); updateBadges(); showToast('âœ“ Deleted'); });
+}
+
+// â”€â”€ Knowledge / FAQ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function renderKnowledgeTable(){
+  const kb=serverData.knowledge_data||{}; let html='';
+  Object.entries(kb).forEach(([k,v])=>{
+    html+=`<tr>
+      <td><input value="${k.replace(/"/g,'&quot;')}" onchange="renameKb('${k.replace(/'/g,"\\'")}',this.value)" style="width:100%"/></td>
+      <td><textarea onchange="serverData.knowledge_data['${k.replace(/'/g,"\\'")}'] = this.value" style="min-height:50px;width:100%">${v}</textarea></td>
+      <td><button class="btn-danger" onclick="deleteKb('${k.replace(/'/g,"\\'")}')">âœ•</button></td>
+    </tr>`;
+  });
+  document.getElementById('knowledge-tbody').innerHTML=html;
+}
+function addKnowledgeRow(){
+  const key=prompt('Question key:'); if(!key) return;
+  serverData.knowledge_data[key.trim()]='';
+  renderKnowledgeTable();
+}
+function renameKb(old,nw){ if(old!==nw){ serverData.knowledge_data[nw]=serverData.knowledge_data[old]; delete serverData.knowledge_data[old]; renderKnowledgeTable(); } }
+function deleteKb(k){ if(confirm(`Delete "${k}"?`)){ delete serverData.knowledge_data[k]; renderKnowledgeTable(); } }
+function saveKnowledgeData(){
+  fetch('/admin/save-knowledge',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(serverData.knowledge_data)})
+    .then(r=>r.json()).then(d=>{ updateBadges(); showToast(d.message||'âœ“ FAQ saved'); });
+}
 </script>
 </body>
 </html>
