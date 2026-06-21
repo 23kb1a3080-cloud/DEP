@@ -100,6 +100,7 @@ body{font-family:'Segoe UI',sans-serif;background:#0a0a14;color:#e8eaf6;height:1
   </div>
   <div class="sb-nav">
     <button class="nav-btn active" onclick="go('faculty','👥 Faculty Management')">👥 Faculty <span class="cnt" id="c-fac">0</span></button>
+    <button class="nav-btn" onclick="go('timetable','📅 Timetable Management')">📅 Timetable <span class="cnt" id="c-tt">0</span></button>
     <button class="nav-btn" onclick="go('busfees','🚌 Bus Fee Management')">🚌 Bus Fees <span class="cnt" id="c-bus">0</span></button>
     <button class="nav-btn" onclick="go('students','🎓 Students')">🎓 Students <span class="cnt" id="c-stu">0</span></button>
     <button class="nav-btn" onclick="go('curriculum','📖 Curriculum')">📖 Curriculum</button>
@@ -162,6 +163,62 @@ body{font-family:'Segoe UI',sans-serif;background:#0a0a14;color:#e8eaf6;height:1
         <table class="tbl"><thead><tr>
           <th>#</th><th>Name</th><th>Designation</th><th>Phone</th><th>Email</th><th>Qualification</th><th>Actions</th>
         </tr></thead><tbody id="fac-tbody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMETABLE MANAGEMENT -->
+  <div class="panel" id="panel-timetable">
+    <div class="card">
+      <div class="card-header">
+        <h3>➕ Add / Edit Timetable Entry</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="search-bar" id="tt-search" placeholder="🔍 Search faculty, subject, section…" oninput="filterTimetableTable(this.value)">
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="fr">
+          <div class="fg"><label>Faculty Name *</label><input id="tt-faculty" placeholder="Dr. Narayana Rao Appini" list="tt-faculty-list"><datalist id="tt-faculty-list"></datalist></div>
+          <div class="fg"><label>Day *</label>
+            <select id="tt-day">
+              <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+              <option>Thursday</option><option>Friday</option><option>Saturday</option>
+            </select>
+          </div>
+          <div class="fg"><label>Time Slot *</label>
+            <select id="tt-slot">
+              <option value="9:00-10:00">9:00 – 10:00</option>
+              <option value="10:00-11:00">10:00 – 11:00</option>
+              <option value="11:00-12:00">11:00 – 12:00</option>
+              <option value="1:00-2:00">1:00 – 2:00</option>
+              <option value="2:00-3:00">2:00 – 3:00</option>
+              <option value="3:00-4:00">3:00 – 4:00</option>
+              <option value="4:00-5:00">4:00 – 5:00</option>
+            </select>
+          </div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Subject / Class *</label><input id="tt-subject" placeholder="AI II-II AI_DS-A"></div>
+          <div class="fg"><label>Branch</label><input id="tt-branch" placeholder="AI_DS"></div>
+          <div class="fg"><label>Semester</label><input id="tt-semester" placeholder="II-II"></div>
+          <div class="fg"><label>Section</label><input id="tt-section" placeholder="A"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Room Number</label><input id="tt-room" placeholder="Room 301"></div>
+        </div>
+        <input type="hidden" id="tt-edit-key" value="">
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-g" onclick="saveTimetableEntry()">💾 Save Entry</button>
+          <button class="btn btn-s" onclick="clearTTForm()">✖ Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>📅 Timetable Entries</h3><span id="tt-count" style="font-size:11px;color:#666"></span></div>
+      <div style="overflow-x:auto">
+        <table class="tbl"><thead><tr>
+          <th>#</th><th>Faculty</th><th>Day</th><th>Slot</th><th>Subject / Class</th><th>Section</th><th>Actions</th>
+        </tr></thead><tbody id="tt-tbody"></tbody></table>
       </div>
     </div>
   </div>
@@ -534,6 +591,7 @@ function go(panel, title) {
   if (panel === 'deptinfo') loadDeptInfo();
   if (panel === 'curriculum') loadCurriculum();
   if (panel === 'failed') loadFailedQueries();
+  if (panel === 'timetable') loadTimetable();
 }
 
 function filterTable(tbodyId, q) {
@@ -551,7 +609,7 @@ window.addEventListener('load', () => {
   localStorage.setItem('nbkr_admin_pwd', PWD);
   loadFaculty(); loadStudents(); loadBusFees(); loadNotices();
   loadPlacements(); loadEvents(); loadKnowledge(); loadSubjects();
-  loadCurriculum(); loadFailedQueries();
+  loadCurriculum(); loadFailedQueries(); loadTimetable();
 });
 </script>
 
@@ -1179,6 +1237,156 @@ function loadFailedQueries() {
 document.getElementById('bus-modal').addEventListener('click', function(e) {
   if (e.target === this) closeBusModal();
 });
+
+// ── TIMETABLE MANAGEMENT ──────────────────────────────────────────────────────
+let ttEntries = []; // flat list of {faculty, day, slot, subject, branch, semester, section, room}
+let facListForTT = [];
+
+function loadTimetable() {
+  api('/admin/data').then(d => {
+    const facData = d.faculty_data || [];
+    facListForTT = facData;
+
+    // Populate faculty datalist
+    const dl = document.getElementById('tt-faculty-list');
+    dl.innerHTML = facData.map(f => `<option value="${esc(f.name||'')}"></option>`).join('');
+
+    // Flatten all timetable entries
+    ttEntries = [];
+    const dayMap = {Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday'};
+    facData.forEach(fac => {
+      const tt = fac.timetable || {};
+      Object.entries(tt).forEach(([dayKey, slots]) => {
+        const dayFull = dayMap[dayKey] || dayKey;
+        Object.entries(slots).forEach(([slot, val]) => {
+          if (!val || ['L','U','N','C','H','BREAK','LUNCH'].includes(val.trim())) return;
+          // Parse "SUBJECT SEM SEC" or "SUBJECT (SEM SEC)"
+          let subject = val.trim(), section = '', semester = '', branch = '';
+          const m = val.match(/^(.+?)\s*\((.+)\)$/);
+          if (m) { subject = m[1].trim(); const info = m[2].trim(); section = info.split(/[\s-]/).pop() || ''; }
+          ttEntries.push({ faculty: fac.name, day: dayFull, dayKey, slot, subject, section, semester, branch, room: '', val });
+        });
+      });
+    });
+
+    const cnt = ttEntries.length;
+    document.getElementById('tt-count').textContent = cnt + ' entries';
+    document.getElementById('c-tt').textContent = cnt;
+    renderTimetableTable(ttEntries);
+  });
+}
+
+function renderTimetableTable(list) {
+  document.getElementById('tt-tbody').innerHTML = list.map((e, i) => `<tr data-idx="${i}">
+    <td>${i+1}</td>
+    <td><b>${esc(e.faculty||'—')}</b></td>
+    <td>${e.day||'—'}</td>
+    <td style="white-space:nowrap;font-size:11.5px">${e.slot||'—'}</td>
+    <td style="font-size:12px">${esc(e.subject||'—')}</td>
+    <td>${esc(e.section||'—')}</td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-s btn-sm" onclick="editTTEntry(${i})">✏️</button>
+      <button class="btn btn-r btn-sm" onclick="deleteTTEntry(${i})">🗑️</button>
+    </td>
+  </tr>`).join('') || '<tr><td colspan="7" style="color:#666;padding:16px;text-align:center">No timetable entries found.</td></tr>';
+}
+
+function filterTimetableTable(q) {
+  const ql = q.toLowerCase();
+  if (!ql) { renderTimetableTable(ttEntries); return; }
+  renderTimetableTable(ttEntries.filter(e =>
+    (e.faculty||'').toLowerCase().includes(ql) ||
+    (e.subject||'').toLowerCase().includes(ql) ||
+    (e.section||'').toLowerCase().includes(ql) ||
+    (e.day||'').toLowerCase().includes(ql)
+  ));
+}
+
+function editTTEntry(idx) {
+  const e = ttEntries[idx];
+  if (!e) return;
+  document.getElementById('tt-faculty').value = e.faculty || '';
+  document.getElementById('tt-day').value = e.day || 'Monday';
+  document.getElementById('tt-slot').value = e.slot || '9:00-10:00';
+  document.getElementById('tt-subject').value = e.subject || '';
+  document.getElementById('tt-section').value = e.section || '';
+  document.getElementById('tt-semester').value = e.semester || '';
+  document.getElementById('tt-branch').value = e.branch || '';
+  document.getElementById('tt-room').value = e.room || '';
+  // Store edit reference: faculty+dayKey+slot
+  document.getElementById('tt-edit-key').value = JSON.stringify({faculty: e.faculty, dayKey: e.dayKey, slot: e.slot});
+}
+
+function deleteTTEntry(idx) {
+  const e = ttEntries[idx];
+  if (!e) return;
+  if (!confirm(`Delete "${e.subject}" for ${e.faculty} on ${e.day} (${e.slot})?`)) return;
+
+  const fac = facListForTT.find(f => f.name === e.faculty);
+  if (!fac || !fac.timetable) return toast('Faculty or timetable not found', true);
+
+  const dayKey = e.dayKey;
+  if (fac.timetable[dayKey] && fac.timetable[dayKey][e.slot] !== undefined) {
+    fac.timetable[dayKey][e.slot] = '';
+  }
+
+  api('/admin/save-faculty', 'POST', facListForTT).then(r => {
+    if (r.error) return toast(r.error, true);
+    toast('🗑️ Entry deleted'); loadTimetable();
+  });
+}
+
+function saveTimetableEntry() {
+  const faculty = document.getElementById('tt-faculty').value.trim();
+  const day = document.getElementById('tt-day').value;
+  const slot = document.getElementById('tt-slot').value;
+  const subject = document.getElementById('tt-subject').value.trim();
+  const section = document.getElementById('tt-section').value.trim();
+  const semester = document.getElementById('tt-semester').value.trim();
+  const branch = document.getElementById('tt-branch').value.trim();
+  const room = document.getElementById('tt-room').value.trim();
+
+  if (!faculty || !day || !slot || !subject) return toast('Faculty, Day, Slot and Subject are required', true);
+
+  // Build the value string matching the faculty data format
+  let val = subject;
+  if (semester && section) val = `${subject} (${semester} ${branch}-${section})`;
+  else if (section) val = `${subject} (${section})`;
+
+  const fac = facListForTT.find(f => f.name === faculty);
+  if (!fac) return toast('Faculty not found. Please add them via Faculty Management first.', true);
+  if (!fac.timetable) fac.timetable = {};
+
+  // Map full day name → short key
+  const dayMap = {Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat'};
+  const dayKey = dayMap[day] || day;
+  if (!fac.timetable[dayKey]) fac.timetable[dayKey] = {};
+
+  const editKey = document.getElementById('tt-edit-key').value;
+  if (editKey) {
+    try {
+      const ek = JSON.parse(editKey);
+      // Clear old slot if it changed
+      if ((ek.dayKey !== dayKey || ek.slot !== slot) && fac.timetable[ek.dayKey]) {
+        fac.timetable[ek.dayKey][ek.slot] = '';
+      }
+    } catch(e) {}
+  }
+
+  fac.timetable[dayKey][slot] = val;
+
+  api('/admin/save-faculty', 'POST', facListForTT).then(r => {
+    if (r.error) return toast(r.error, true);
+    toast('✓ Timetable entry saved'); clearTTForm(); loadTimetable();
+  });
+}
+
+function clearTTForm() {
+  ['tt-faculty','tt-subject','tt-section','tt-semester','tt-branch','tt-room'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tt-edit-key').value = '';
+  document.getElementById('tt-search').value = '';
+  renderTimetableTable(ttEntries);
+}
 </script>
 </body>
 </html>

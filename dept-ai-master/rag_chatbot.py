@@ -2249,41 +2249,240 @@ def handle_timetable_query(qa: QueryAnalysis) -> str:
     if section:           return build_section_week_table(section)
     if subject:           return build_subject_table(subject)
 
-    q = qa.original.lower()
-    if any(w in q for w in ["all section","all timetable","every section","overview"]):
-        if year == 3:
-            return build_all_sections_overview(year=3)
-        elif year == 2:
-            return build_all_sections_overview(year=2)
-        else:
-            return build_all_sections_overview(year=1)
 
-    # Prompt user with year + section selection table
-    return """
-<div style="font-family:'Segoe UI',sans-serif;padding:12px 16px;background:#fff;border:1px solid #ddd;border-radius:10px">
-  <b style="color:#667eea;font-size:14px">📅 Please specify the year and section:</b>
-  <table style="margin-top:10px;border-collapse:collapse;width:100%">
-    <thead>
-      <tr style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff">
-        <th style="padding:9px 14px;text-align:left;font-size:13px">Year</th>
-        <th style="padding:9px 14px;text-align:left;font-size:13px">Command</th>
-        <th style="padding:9px 14px;text-align:left;font-size:13px">What you get</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr style="background:#f8f9ff"><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#667eea" rowspan="4">1st Year</td><td style="padding:8px 14px;font-size:13px"><b>1st year Section A timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 1st Year Sec A</td></tr>
-      <tr><td style="padding:8px 14px;font-size:13px"><b>1st year Section B timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 1st Year Sec B</td></tr>
-      <tr style="background:#f8f9ff"><td style="padding:8px 14px;font-size:13px"><b>1st year Section C timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 1st Year Sec C</td></tr>
-      <tr><td style="padding:8px 14px;font-size:13px"><b>1st year Section D timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 1st Year Sec D</td></tr>
-      <tr style="background:#e8eaf6"><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#764ba2" rowspan="2">2nd Year</td><td style="padding:8px 14px;font-size:13px"><b>2nd year Section A timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 2nd Year Sec A</td></tr>
-      <tr style="background:#f3e5f5"><td style="padding:8px 14px;font-size:13px"><b>2nd year Section B timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 2nd Year Sec B</td></tr>
-      <tr style="background:#e8f5e9"><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#2e7d32" rowspan="2">3rd Year</td><td style="padding:8px 14px;font-size:13px"><b>3rd year Section A timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 3rd Year Sec A</td></tr>
-      <tr style="background:#f1f8e9"><td style="padding:8px 14px;font-size:13px"><b>3rd year Section B timetable</b></td><td style="padding:8px 14px;font-size:13px">Full week — 3rd Year Sec B</td></tr>
-      <tr style="background:#f8f9ff"><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#555" colspan="1">Any year</td><td style="padding:8px 14px;font-size:13px"><b>Section A Monday</b></td><td style="padding:8px 14px;font-size:13px">Single day schedule</td></tr>
-      <tr><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#555"></td><td style="padding:8px 14px;font-size:13px"><b>AI Lab schedule</b></td><td style="padding:8px 14px;font-size:13px">Subject across all sections</td></tr>
-    </tbody>
-  </table>
+# ─────────────────────────────────────────────────────────────────────────────
+# Faculty Timetable & Leisure Hour functions
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Slot time labels for faculty data (aids_faculty_data.json format)
+_FAC_SLOT_ORDER = [
+    "9:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-1:00",
+    "1:00-2:00", "2:00-3:00", "3:00-4:00", "4:00-5:00"
+]
+_FAC_LUNCH_VALS = {"L", "U", "N", "C", "H", "BREAK", "LUNCH", "l", "u", "n", "c", "h", "break", "lunch"}
+_FAC_DAYS_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+_FAC_DAY_LABELS = {
+    "Mon": "Monday", "Tue": "Tuesday", "Wed": "Wednesday",
+    "Thu": "Thursday", "Fri": "Friday", "Sat": "Saturday"
+}
+
+
+def build_faculty_timetable_html(faculty: Dict) -> str:
+    """Build an HTML weekly timetable card from a faculty record's 'timetable' dict."""
+    name = faculty.get("name", "Faculty")
+    desig = faculty.get("designation", "")
+    tt = faculty.get("timetable", {})
+    if not tt:
+        return (f'<p style="font-family:Segoe UI,sans-serif;color:#555">'
+                f'Timetable information is not available for {name}.</p>')
+
+    # Build table header
+    th_style = ('style="border:1px solid #bbb;padding:8px 10px;text-align:center;'
+                'font-size:11.5px;font-weight:700;background:#2d3a6b;color:#fff;white-space:nowrap"')
+    slot_headers = "".join(
+        f'<th {th_style}>{s.replace(":00-", "–").replace(":00", "")}</th>'
+        for s in _FAC_SLOT_ORDER
+    )
+    header_row = f'<tr><th {th_style}>Day</th>{slot_headers}</tr>'
+
+    # Build day rows
+    rows = ""
+    day_th = ('style="border:1px solid #bbb;padding:8px 10px;font-weight:700;'
+              'font-size:12px;background:#fce4ec;color:#880e4f;'
+              'white-space:nowrap;text-align:center;min-width:52px"')
+    lunch_letters = {"Mon": "L", "Tue": "U", "Wed": "N", "Thu": "C", "Fri": "H", "Sat": "BREAK"}
+
+    for day_key in _FAC_DAYS_ORDER:
+        day_data = tt.get(day_key, {})
+        full_day = _FAC_DAY_LABELS.get(day_key, day_key)
+        cells = f'<td {day_th}>{full_day[:3]}</td>'
+        for slot in _FAC_SLOT_ORDER:
+            val = day_data.get(slot, "")
+            if not val or val.strip() in _FAC_LUNCH_VALS or val.strip() == "":
+                if "12:00-1:00" in slot:
+                    lv = lunch_letters.get(day_key, "L")
+                    cells += (f'<td style="border:1px solid #bbb;padding:6px 8px;text-align:center;'
+                              f'background:#f0f0f0;width:52px;min-width:52px">'
+                              f'<span style="font-weight:900;font-size:15px;letter-spacing:1px;'
+                              f'color:#666;font-style:italic">{lv}</span></td>')
+                elif val.strip() in _FAC_LUNCH_VALS:
+                    cells += (f'<td style="border:1px solid #bbb;padding:6px 8px;text-align:center;'
+                              f'background:#f0f0f0;"><span style="font-weight:700;color:#888">{val.strip()}</span></td>')
+                else:
+                    cells += (f'<td style="border:1px solid #bbb;padding:6px 8px;text-align:center;'
+                              f'background:#fff;color:#ccc">—</td>')
+            else:
+                v = val.strip()
+                # Parse "SUBJECT (...)" or plain
+                m = re.match(r'^(.+?)\s*\((.+)\)$', v)
+                subj = m.group(1).strip() if m else v
+                extra = m.group(2).strip() if m else ""
+                # Colour by lab
+                if _is_lab(subj):
+                    bg, fg = "#ffe066", "#5a4000"
+                else:
+                    bg, fg = "#fff", "#1a1a2e"
+                    for code, colour in _SUBJ_COLORS.items():
+                        if code in subj:
+                            bg = colour
+                            fg = _SUBJ_TEXT.get(code, "#1a1a2e")
+                            break
+                extra_html = (f'<div style="font-size:9.5px;color:{fg};opacity:.8;margin-top:2px">'
+                              f'{extra}</div>') if extra else ""
+                cells += (f'<td style="border:1px solid #bbb;padding:6px 8px;text-align:center;'
+                          f'vertical-align:middle;font-size:11px;background:{bg};color:{fg};font-weight:700">'
+                          f'<div style="font-size:11px">{subj}</div>{extra_html}</td>')
+        rows += f'<tr>{cells}</tr>'
+
+    desig_badge = (f'<span style="background:rgba(139,92,246,.12);color:#7c3aed;font-size:11px;'
+                   f'font-weight:600;padding:2px 8px;border-radius:8px;margin-left:10px">'
+                   f'{desig}</span>') if desig else ""
+    return f"""
+<div style="margin:8px 0;font-family:'Segoe UI',Arial,sans-serif" class="timetable-card-container">
+  <div style="background:linear-gradient(135deg,#2d3a6b,#4a5568);color:#fff;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center">
+    <b style="font-size:14px">📅 {name}</b>{desig_badge}
+    <span style="margin-left:8px;font-size:11.5px;opacity:.8">— Weekly Teaching Timetable</span>
+  </div>
+  <div style="overflow-x:auto;border:1px solid #bbb;border-top:none;border-radius:0 0 8px 8px;background:#fff">
+    <table class="timetable-table" style="width:100%;border-collapse:collapse">
+      <thead>{header_row}</thead>
+      <tbody>{rows}</tbody>
+    </table>
+  </div>
+  <p style="font-size:11px;color:#888;margin-top:5px;font-family:Segoe UI,sans-serif">
+    — = Free period &nbsp;|&nbsp; L/U/N/C/H = Lunch Break
+  </p>
 </div>"""
+
+
+def build_all_faculty_schedule_list_html() -> str:
+    """Build a beautiful HTML card listing all faculty members with buttons to view their timetable or free hours."""
+    rows = ""
+    for f in _FACULTY_DATA:
+        name = f.get("name", "")
+        desig = f.get("designation", "")
+        # Add badge styling
+        desig_badge = f'<span style="font-size:11px;color:#7c3aed;background:rgba(139,92,246,.1);padding:2px 6px;border-radius:4px">{desig}</span>' if desig else ""
+        
+        # HTML for each row
+        rows += f"""
+        <tr style="border-bottom: 1px solid #f0f0f0;">
+          <td style="padding: 10px 12px; font-weight: 600; color: #1a1a2e; font-size: 13.5px; text-align: left;">
+            {name} <div style="margin-top:2px">{desig_badge}</div>
+          </td>
+          <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+            <button onclick="quickSend('timetable of {name}')" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1.0" style="background:#2d3a6b; color:#fff; border:none; padding:6px 11px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; margin-right:4px; transition: opacity 0.2s;">📅 Timetable</button>
+            <button onclick="quickSend('leisure hours of {name}')" onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1.0" style="background:#7c3aed; color:#fff; border:none; padding:6px 11px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; transition: opacity 0.2s;">🕐 Free Hours</button>
+          </td>
+        </tr>
+        """
+
+    return f"""
+<div style="margin:8px 0;font-family:'Segoe UI',Arial,sans-serif" class="timetable-card-container">
+  <div style="background:linear-gradient(135deg,#2d3a6b,#4a5568);color:#fff;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center">
+    <b style="font-size:14px">👥 Faculty Schedule Directory</b>
+  </div>
+  <div style="border:1px solid #bbb;border-top:none;border-radius:0 0 8px 8px;background:#fff;max-height:350px;overflow-y:auto">
+    <table style="width:100%;border-collapse:collapse;margin:0">
+      <tbody>
+        {rows}
+      </tbody>
+    </table>
+  </div>
+</div>
+"""
+
+
+def build_faculty_leisure_html(faculty: Dict) -> str:
+    """Identify and render leisure (free) hours for a faculty member."""
+    name = faculty.get("name", "Faculty")
+    desig = faculty.get("designation", "")
+    tt = faculty.get("timetable", {})
+    if not tt:
+        return (f'<p style="font-family:Segoe UI,sans-serif;color:#555">'
+                f'Timetable information is not available for {name}.</p>')
+
+    # Teaching slots (exclude 12:00-1:00 lunch)
+    work_slots = [s for s in _FAC_SLOT_ORDER if "12:00-1:00" not in s]
+
+    free_by_day: Dict[str, List[str]] = {}
+    for day_key in _FAC_DAYS_ORDER:
+        day_data = tt.get(day_key, {})
+        free = []
+        for slot in work_slots:
+            val = day_data.get(slot, "").strip()
+            if not val or val in _FAC_LUNCH_VALS:
+                # This slot is free
+                slot_label = slot.replace(":00-", "–").replace(":00", "")
+                free.append(slot_label)
+        if free:
+            free_by_day[_FAC_DAY_LABELS.get(day_key, day_key)] = free
+
+    if not free_by_day:
+        return (f'<div style="font-family:Segoe UI,sans-serif;padding:14px 18px;'
+                f'background:#fff3cd;border-radius:10px;border:1px solid #ffc107">'
+                f'<b>⚠️ {name}</b> appears to have no free periods in the timetable.</div>')
+
+    # Render card
+    rows_html = ""
+    for day, slots in free_by_day.items():
+        slot_pills = "".join(
+            f'<span style="background:rgba(139,92,246,.12);color:#7c3aed;font-size:11.5px;'
+            f'font-weight:600;padding:3px 9px;border-radius:12px;margin:2px;display:inline-block">'
+            f'{s}</span>' for s in slots
+        )
+        rows_html += (f'<tr>'
+                      f'<td style="border:1px solid #eee;padding:10px 14px;font-weight:700;'
+                      f'background:#f8f9ff;color:#2d3a6b;font-size:13px;white-space:nowrap;min-width:90px">{day}</td>'
+                      f'<td style="border:1px solid #eee;padding:8px 12px">{slot_pills}</td>'
+                      f'</tr>')
+
+    total = sum(len(v) for v in free_by_day.values())
+    desig_badge = (f'<span style="background:rgba(255,255,255,.2);font-size:11px;'
+                   f'padding:2px 8px;border-radius:8px;margin-left:10px">{desig}</span>') if desig else ""
+    return f"""
+<div style="margin:8px 0;font-family:'Segoe UI',Arial,sans-serif">
+  <div style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;align-items:center">
+    <b style="font-size:14px">🕐 Leisure / Free Hours — {name}</b>{desig_badge}
+    <span style="margin-left:auto;font-size:11.5px;opacity:.85">{total} free slot(s) per week</span>
+  </div>
+  <div style="border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;background:#fff;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:#f0f0f0">
+          <th style="border:1px solid #eee;padding:9px 14px;text-align:left;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.04em">Day</th>
+          <th style="border:1px solid #eee;padding:9px 14px;text-align:left;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.04em">Free Periods</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    <p style="font-size:11px;color:#888;padding:8px 14px;border-top:1px solid #eee;margin:0">
+      🍽️ Lunch break (12:00–1:00) is excluded from free periods.
+    </p>
+  </div>
+</div>"""
+
+
+def is_faculty_timetable_query(query: str) -> bool:
+    """Return True if query is asking for a specific faculty's timetable."""
+    q = query.lower()
+    tt_kw = {"timetable", "time table", "schedule", "classes", "teaching", "class timing"}
+    fac_kw = {"faculty", "teacher", "professor", "lecturer", "sir", "mam", "madam", "dr", "prof"}
+    has_tt = any(k in q for k in tt_kw)
+    has_fac_kw = any(k in q for k in fac_kw)
+    # Also match patterns like "timetable of dr xyz" or "classes of [name]"
+    if has_tt:
+        return True
+    return False
+
+
+def is_faculty_leisure_query(query: str) -> bool:
+    """Return True if query is asking for faculty free/leisure periods."""
+    q = query.lower()
+    leisure_kw = {"free", "leisure", "free period", "free hour", "free time",
+                  "not busy", "available", "when is", "when free", "break"}
+    return any(k in q for k in leisure_kw)
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2353,7 +2552,10 @@ def _find_faculty_by_name(query: str) -> Optional[Dict]:
         r'\b(who is|tell me about|about|details of|detail of|info on|info about|'
         r'information about|information of|show me|find|search|get|what does|'
         r'what is the specialization of|qualification of|designation of|'
-        r'phone of|email of|contact of|joining date of)\b',
+        r'phone of|email of|contact of|joining date of|'
+        r'timetable of|time table of|schedule of|classes of|leisure hours of|'
+        r'free periods of|free hours of|when is|free|timetable|schedule|'
+        r'time table|classes|leisure|free period|free hour|free time)\b',
         '', query, flags=re.IGNORECASE
     ).strip()
 
@@ -2549,25 +2751,60 @@ def _help_card() -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 def classify_query_module(query: str, qa: QueryAnalysis) -> str:
     q = query.lower().strip()
-    
+
+    # 0a. Faculty Leisure Hours Check (must come BEFORE timetable/faculty checks)
+    leisure_kw = {"leisure", "free", "free period", "free hour", "free time", "when is free",
+                  "when free", "not busy", "available period", "no class", "no classes"}
+    if any(kw in q for kw in leisure_kw):
+        # Only if a faculty name is also present
+        for f in _FACULTY_DATA:
+            fname = f.get("name", "").lower()
+            for part in fname.split():
+                if len(part) >= 4 and part in q:
+                    return "faculty_leisure"
+        # Also handle generic "leisure hours" with a name-like token
+        for word in re.sub(r'[^a-z\s]', ' ', q).split():
+            if len(word) >= 4 and word not in {"free", "when", "hour", "period", "time", "busy", "class"}:
+                for f in _FACULTY_DATA:
+                    if word in f.get("name", "").lower():
+                        return "faculty_leisure"
+
+    # 0b. Faculty Timetable Check (must come BEFORE generic timetable section check)
+    fac_tt_kw = {"timetable of", "schedule of", "time table of", "classes of",
+                 "teaching schedule", "class schedule", "what does teach", "when does teach"}
+    if any(kw in q for kw in fac_tt_kw):
+        # If query has timetable + a faculty name, route to faculty_timetable
+        for f in _FACULTY_DATA:
+            fname = f.get("name", "").lower()
+            for part in fname.split():
+                if len(part) >= 4 and part in q:
+                    return "faculty_timetable"
+    # Also detect "show timetable [faculty name]" or "dr xyz timetable"
+    if any(kw in q for kw in ["timetable", "schedule", "time table"]):
+        for f in _FACULTY_DATA:
+            fname = f.get("name", "").lower()
+            name_tokens = [p for p in fname.split() if len(p) >= 4]
+            if any(tok in q for tok in name_tokens):
+                return "faculty_timetable"
+
+    # 0c. General Faculty Timetable/Schedule Check (no specific name in query, but refers to faculty schedule in general)
+    if any(kw in q for kw in ["faculty schedule", "faculty timetable", "faculty timetables", "faculty schedules", "teachers schedule", "teachers timetable", "teacher schedule", "teacher timetable", "teaching schedule", "class schedule"]):
+        return "faculty_timetable_list"
+
     # 1. Student Check
-    # Roll numbers or explicit student keywords
     if _ROLL_PAT.search(q) or any(w in q for w in ["student", "roll", "cgpa", "topper", "student info", "student list"]):
-        # Make sure it's not a timetable query
         timetable_kw = {"timetable","time table","schedule","class","period","timing","lecture","lab","monday","tuesday","wednesday","thursday","friday","saturday","weekly","slot","semester","sem "}
         if not any(kw in q for kw in timetable_kw):
             return "student"
 
-    # 2. Timetable Check
+    # 2. Timetable Check (section-based)
     if any(w in q for w in ["timetable", "schedule", "time table", "class timing", "period", "slot", "section a", "section b", "section c", "section d"]):
         return "timetable"
-        
+
     # 3. Faculty Check
-    # Check for direct matches or keywords
     faculty_keywords = ["faculty", "teacher", "professor", "lecturer", "staff", "designation", "specialization", "doj", "joining date", "teaches", "teaching"]
     if any(w in q for w in faculty_keywords) or any(w in q for w in ["hod", "head of department", "head of dept"]):
         return "faculty"
-    # Also check if any word matches a faculty member's name
     skip_words = {"sir","mam","madam","prof","dr","mr","mrs","ms","faculty","teacher","lecturer","who","is","the","tell","me","show","find","get","what"}
     for word in re.sub(r'[^a-z\s]', ' ', q).split():
         if len(word) >= 3 and word not in skip_words:
@@ -2579,7 +2816,6 @@ def classify_query_module(query: str, qa: QueryAnalysis) -> str:
     # 4. Bus Fee Check
     if any(w in q for w in ["bus", "fee", "fare", "charge", "transport", "route", "stop", "boarding point"]):
         return "bus_fee"
-    # Or matches any stop name
     for route_stops in _BUS_FEES.values():
         for stop_entry in route_stops:
             stop = stop_entry.get("stop", "").lower()
@@ -2595,11 +2831,11 @@ def classify_query_module(query: str, qa: QueryAnalysis) -> str:
     if any(w in q for w in ["circular", "notice", "announcement", "latest notice"]):
         return "circular"
 
-    # 7. General Check (hostel, library, placements, admissions, online portals etc.)
+    # 7. General Check
     general_keywords = ["hostel", "admission", "admissions", "course", "courses", "library", "placement", "placements", "portal", "intranet", "e-journal", "ejournal", "assessment", "exam duties", "login"]
     if any(w in q for w in general_keywords):
         return "general"
-        
+
     return "unknown"
 
 
@@ -2692,7 +2928,7 @@ def get_response(query: str, conn_id: str = "default") -> str:
     
     if module == "unknown":
         log_failed_query(query, "unknown", 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     # Route strictly to relevant data source
     if module == "student":
@@ -2700,14 +2936,37 @@ def get_response(query: str, conn_id: str = "default") -> str:
         if student_reply is not None:
             return student_reply
         log_failed_query(query, "student", 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     if module == "timetable":
         timetable_reply = handle_timetable_query(qa)
         if timetable_reply is not None:
             return timetable_reply
         log_failed_query(query, "timetable", 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
+
+    if module == "faculty_timetable_list":
+        return build_all_faculty_schedule_list_html()
+
+    if module == "faculty_timetable":
+        # Find the faculty by name from the query
+        fac = _find_faculty_by_name(query)
+        if fac:
+            tt = fac.get("timetable", {})
+            if tt:
+                return build_faculty_timetable_html(fac)
+        log_failed_query(query, "faculty_timetable", 0.0)
+        return "I don't know the answer to that question."
+
+    if module == "faculty_leisure":
+        # Find the faculty by name from the query
+        fac = _find_faculty_by_name(query)
+        if fac:
+            tt = fac.get("timetable", {})
+            if tt:
+                return build_faculty_leisure_html(fac)
+        log_failed_query(query, "faculty_leisure", 0.0)
+        return "I don't know the answer to that question."
 
     if module == "bus_fee":
         # Search bus_fee documents in RAG
@@ -2733,7 +2992,7 @@ def get_response(query: str, conn_id: str = "default") -> str:
                 return build_bus_fee_card([matches[0]], location)
         
         log_failed_query(query, "bus_fee", results[0][1] if results else 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     if module == "faculty":
         # 1. HOD shortcut
@@ -2778,7 +3037,7 @@ def get_response(query: str, conn_id: str = "default") -> str:
                 if matched: return build_specialization_table(spec_label, matched)
 
         log_failed_query(query, "faculty", results[0][1] if results else 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     if module == "department":
         results = retrieve_filtered(qa, "department")
@@ -2797,7 +3056,7 @@ def get_response(query: str, conn_id: str = "default") -> str:
 </div>"""
 
         log_failed_query(query, "department", results[0][1] if results else 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     if module == "circular":
         q_lower = query.lower()
@@ -2817,7 +3076,7 @@ def get_response(query: str, conn_id: str = "default") -> str:
             return build_all_circulars_table()
 
         log_failed_query(query, "circular", results[0][1] if results else 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     if module == "general":
         results = retrieve_filtered(qa, "general")
@@ -2829,10 +3088,10 @@ def get_response(query: str, conn_id: str = "default") -> str:
             return _info_card(f"ℹ️ {key.title()}", [(key.upper(), val)])
 
         log_failed_query(query, "general", results[0][1] if results else 0.0)
-        return "I don't know the answer to that question. Please contact the department office or administrator."
+        return "I don't know the answer to that question."
 
     log_failed_query(query, module, 0.0)
-    return "I don't know the answer to that question. Please contact the department office or administrator."
+    return "I don't know the answer to that question."
 
 
 

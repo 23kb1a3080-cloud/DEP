@@ -106,6 +106,23 @@ def load_knowledge_base():
         except Exception as e:
             print(f"⚠ Could not load timetable knowledge base: {e}")
     
+    # Load knowledge updates
+    if os.path.exists('knowledge_updates.json'):
+        try:
+            with open('knowledge_updates.json', 'r', encoding='utf-8') as f:
+                updates = json.load(f)
+                if isinstance(updates, dict):
+                    kb.update(updates)
+                elif isinstance(updates, list):
+                    for item in updates:
+                        t = item.get("title", "")
+                        txt = item.get("text", "")
+                        if t and txt:
+                            kb[t] = txt
+                print("✓ Loaded knowledge updates into simple chatbot")
+        except Exception as e:
+            print(f"⚠ Could not load knowledge updates: {e}")
+
     return kb
 
 knowledge_base = load_knowledge_base()
@@ -329,11 +346,7 @@ Just ask me anything about NBKR Institute!"""
             if table_html:
                 return table_html
 
-    keywords = extract_keywords(user_message)
-    if keywords:
-        return f"I understand you're asking about {', '.join(keywords[:3])}. Could you please rephrase your question? You can ask me about faculty members, courses, admissions, attendance system, e-journals, assessments, or timetables (e.g., 'Show me Section A timetable')."
-    
-    return "I'm here to help with NBKR Institute information! You can ask me about faculty, courses, admissions, attendance, e-journals, assessments, timetables, or any other services. What would you like to know?"
+    return "I don't know the answer to that question."
 
 @app.get("/")
 async def get_home():
