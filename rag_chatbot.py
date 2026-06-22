@@ -2839,15 +2839,32 @@ def classify_query_module(query: str, qa: QueryAnalysis) -> str:
                         return "faculty_leisure"
 
     # 0b. Faculty Timetable Check (must come BEFORE generic timetable section check)
+    # Check for "faculty timetable/schedule" keywords FIRST (generic faculty list)
+    fac_general_kw = {"faculty timetable", "faculty time table", "faculty timetables", 
+                      "faculty schedule", "faculty schedules", "teachers timetable", 
+                      "teacher timetable", "teachers schedule", "teacher schedule",
+                      "teaching schedule", "class schedule"}
+    if any(kw in q for kw in fac_general_kw):
+        return "faculty_timetable_list"
+    
+    # Check for specific faculty timetable requests
     fac_tt_kw = {"timetable of", "schedule of", "time table of", "classes of",
                  "teaching schedule", "class schedule", "what does teach", "when does teach"}
     if any(kw in q for kw in fac_tt_kw):
         # If query has timetable + a faculty name, route to faculty_timetable
         for f in _FACULTY_DATA:
             fname = f.get("name", "").lower()
+            # Try matching with shorter tokens (>=3 chars) for abbreviated names
             for part in fname.split():
-                if len(part) >= 4 and part in q:
+                if len(part) >= 3 and part in q:
                     return "faculty_timetable"
+            # Also check if faculty short code (abbreviation) is in query
+            fac_codes = []
+            for part in fname.split():
+                if len(part) >= 3:
+                    fac_codes.append(part[:3].lower())
+            if any(code in q for code in fac_codes):
+                return "faculty_timetable"
     # Also detect "show timetable [faculty name]" or "dr xyz timetable"
     if any(kw in q for kw in ["timetable", "schedule", "time table"]):
         for f in _FACULTY_DATA:
@@ -2856,9 +2873,7 @@ def classify_query_module(query: str, qa: QueryAnalysis) -> str:
             if any(tok in q for tok in name_tokens):
                 return "faculty_timetable"
 
-    # 0c. General Faculty Timetable/Schedule Check (no specific name in query, but refers to faculty schedule in general)
-    if any(kw in q for kw in ["faculty schedule", "faculty timetable", "faculty timetables", "faculty schedules", "teachers schedule", "teachers timetable", "teacher schedule", "teacher timetable", "teaching schedule", "class schedule"]):
-        return "faculty_timetable_list"
+
 
     # 1. Student Check
     if _ROLL_PAT.search(q) or any(w in q for w in ["student", "roll", "cgpa", "topper", "student info", "student list"]):
