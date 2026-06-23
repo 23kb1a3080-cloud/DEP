@@ -3320,15 +3320,22 @@ async def home():
     }
     .user-row .msg-content,
     .user-row .msg-content * { color: #fff !important; }
-    /* Bot message */
+    /* Bot message - WHITE background */
     .msg-avatar {
       width: 28px; height: 28px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
       font-size: 13px; flex-shrink: 0; margin-top: 2px;
     }
     .bot-row .msg-avatar {
-      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-      color: #fff; box-shadow: 0 2px 10px rgba(139,92,246,.25);
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff; box-shadow: 0 2px 10px rgba(16,185,129,.25);
+    }
+    .bot-row .msg-content {
+      background: #ffffff;
+      border-radius: 18px 18px 18px 6px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08);
+      border: 1px solid #e5e7eb;
     }
     .msg-content {
       flex: 1; min-width: 0;
@@ -3338,13 +3345,13 @@ async def home():
     .msg-content p:last-child { margin-bottom: 0; }
     /* Rich HTML cards — premium floating embed */
     .msg-content .html-card {
-      background: #fff;
-      border-radius: 14px;
+      background: #ffffff;
+      border-radius: 12px;
       overflow: hidden;
       color: #1a1a2e;
-      box-shadow: 0 4px 24px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.04);
+      box-shadow: 0 2px 16px rgba(0,0,0,.06);
       margin: 8px 0;
-      border-left: 3px solid var(--accent);
+      border-left: 3px solid #10b981;
     }
     .msg-content table {
       border-collapse: collapse; width: 100%;
@@ -3381,7 +3388,7 @@ async def home():
     .typing-dots { display: flex; gap: 6px; padding: 6px 0; }
     .typing-dots span {
       width: 8px; height: 8px;
-      background: var(--accent); border-radius: 50%;
+      background: #10b981; border-radius: 50%;
       animation: typingPulse 1.4s ease-in-out infinite;
     }
     .typing-dots span:nth-child(2) { animation-delay: .2s; }
@@ -3490,20 +3497,41 @@ async def home():
       .welcome p  { font-size: 13px; }
       .welcome    { padding: 24px 14px; gap: 10px; }
       .welcome-icon { width: 54px; height: 54px; font-size: 26px; }
-      .msg-row    { padding: 10px 10px; }
-      .msg-inner  { gap: 8px; }
-      .bot-row .msg-content { font-size: 13.5px; }
+      .msg-row    { padding: 8px 12px; }
+      .msg-inner  { gap: 8px; max-width: 100%; }
+      .bot-row .msg-content { 
+        font-size: 13px; 
+        padding: 12px 14px;
+        border-radius: 16px 16px 16px 6px;
+      }
       .msg-avatar { width: 24px; height: 24px; font-size: 11px; border-radius: 8px; }
       .user-row .msg-content { max-width: 88%; font-size: 13px; padding: 9px 13px; }
       .header-badge { display: none; }
-      .msg-content .html-card { border-radius: 10px; }
+      .msg-content .html-card { 
+        border-radius: 10px; 
+        margin: 4px 0;
+        font-size: 12px;
+      }
       .msg-content .html-card div[style*="min-width:130px"] { min-width: 90px !important; font-size: 10px !important; }
-      .msg-content .html-card div[style*="padding:14px 18px"] { padding: 10px 12px !important; }
+      .msg-content .html-card div[style*="padding:14px 18px"] { padding: 10px 12px !important; font-size: 12px !important; }
       .msg-content .html-card div[style*="padding:10px 16px"] { padding: 8px 12px !important; }
-      .msg-content .html-card span[style*="font-size:15px"] { font-size: 14px !important; }
-      .msg-content .html-card span[style*="font-size:13px"] { font-size: 12px !important; }
+      .msg-content .html-card span[style*="font-size:15px"] { font-size: 13px !important; }
+      .msg-content .html-card span[style*="font-size:13px"] { font-size: 11.5px !important; }
+      .msg-content .html-card table { font-size: 11px !important; }
+      .msg-content .html-card th, .msg-content .html-card td { padding: 6px 8px !important; font-size: 11px !important; }
       .input-area { padding: 10px 10px 16px; }
       .input-hint { font-size: 10px; }
+      
+      /* Make tables mobile-friendly */
+      .msg-content .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -4px;
+        padding: 0 4px;
+      }
+      .msg-content .html-card table {
+        min-width: 100%;
+      }
     }
     @media (max-width: 480px) {
       .timetable-actions {
@@ -3515,12 +3543,32 @@ async def home():
         width: 100% !important;
         justify-content: center !important;
         padding: 8px 12px !important;
+        font-size: 11px !important;
       }
       .quick-actions { grid-template-columns: 1fr; }
       .quick-action  { padding: 12px 13px; }
       .user-row .msg-content { max-width: 92%; }
       .header { padding: 0 10px; }
       .header-title { font-size: 14px; }
+      
+      /* Further optimize tables for small screens */
+      .msg-content .html-card {
+        font-size: 11px !important;
+      }
+      .msg-content .html-card th,
+      .msg-content .html-card td {
+        padding: 5px 6px !important;
+        font-size: 10px !important;
+      }
+      .msg-content .html-card div[style*="font-size:14px"] {
+        font-size: 12px !important;
+      }
+      .msg-content .html-card div[style*="font-size:13px"] {
+        font-size: 11px !important;
+      }
+      .msg-content .html-card div[style*="font-size:12px"] {
+        font-size: 10px !important;
+      }
     }
     @media (max-width: 400px) {
       .input-wrap { border-radius: 18px; padding: 6px 8px 6px 12px; }
@@ -3693,7 +3741,7 @@ async def home():
     showConversation();
     const row = document.createElement('div');
     row.className = 'msg-row bot-row'; row.id = 'typing';
-    row.innerHTML = '<div class="msg-inner"><div class="msg-avatar" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;box-shadow:0 2px 8px rgba(139,92,246,.3)">&#10022;</div><div class="msg-content"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+    row.innerHTML = '<div class="msg-inner"><div class="msg-avatar" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 2px 8px rgba(16,185,129,.3)">✦</div><div class="msg-content"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
     msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
   }
 
@@ -3709,10 +3757,10 @@ async def home():
     row.className = 'msg-row bot-row';
     row.innerHTML = `
       <div class="msg-inner">
-        <div class="msg-avatar" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff">&#10022;</div>
+        <div class="msg-avatar" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff">✦</div>
         <div class="msg-content">
           <div class="html-card" style="max-width:360px">
-            <div style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;
+            <div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;
                         padding:13px 18px;border-radius:10px 10px 0 0;font-size:14px;font-weight:700">
               🔐 Admin Access
             </div>
